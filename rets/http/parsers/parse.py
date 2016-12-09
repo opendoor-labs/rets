@@ -7,7 +7,7 @@ from requests import Response
 
 from rets.http.data import Metadata, Object, SearchResult, SystemMetadata
 from rets.http.parsers.http import parse_xml, parse_response
-from rets.errors import RetsParseError
+from rets.errors import RetsParseError, RetsApiError
 
 
 def parse_capability_urls(response: Response) -> dict:
@@ -106,7 +106,13 @@ def parse_system(response: Response) -> SystemMetadata:
 
 
 def parse_search(response: Response) -> SearchResult:
-    tag = parse_xml(response)
+    try:
+        tag = parse_xml(response)
+    except RetsApiError as e:
+        if e.reply_code == 20201:  # No records found
+            return SearchResult(0, False, ())
+        raise
+
     count_tag = tag.find('COUNT')
     try:
         data = tuple(_parse_data(tag))
