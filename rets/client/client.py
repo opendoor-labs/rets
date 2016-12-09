@@ -6,10 +6,10 @@ from rets.http import RetsHttpClient
 
 class RetsClient:
 
-    def __init__(self, *args, **kwargs):
-        self._http = RetsHttpClient(*args, **kwargs)
+    def __init__(self, *args, http_client: RetsHttpClient = None, metadata: dict = None, **kwargs):
+        self._http = http_client or RetsHttpClient(*args, **kwargs)
         self._http.login()
-        self._metadata = {}
+        self._metadata = metadata or {}
 
     @property
     def resources(self) -> Sequence[Resource]:
