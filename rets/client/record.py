@@ -6,23 +6,18 @@ from rets.http import Object
 class Record:
 
     def __init__(self, resource_class, data: dict, parse: bool = True):
-        self._resource_class = resource_class
-
+        self.resource_class = resource_class
+        self.key_value = str(data[resource_class.resource.key_field])
+        self.data = self.resource_class.table.parse(data) if parse else data
         self._raw_data = data
-        self._data = self._resource_class.table.parse(data) if parse else data
-
-        self.__key__ = str(data[resource_class.resource.key_field])
 
     def get_objects(self, name: str) -> Sequence[Object]:
-        resource_object = self._resource_class.resource.get_object(name)
-        return resource_object.get(self.__key__)
-
-    def __getattr__(self, name: str):
-        return self._data[name]
+        resource_object = self.resource_class.resource.get_object(name)
+        return resource_object.get(self.key_value)
 
     def __repr__(self) -> str:
         return '<Record: %s:%s:%s>' % (
-            self._resource_class.resource.name,
-            self._resource_class.name,
-            self.__key__,
+            self.resource_class.resource.name,
+            self.resource_class.name,
+            self.key_value,
         )
