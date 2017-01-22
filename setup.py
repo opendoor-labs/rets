@@ -1,4 +1,12 @@
+import sys
+
 from setuptools import setup
+
+import rets
+
+if sys.version_info < (3, 3):
+    print('rets requires Python 3.3 or later')
+    sys.exit(1)
 
 long_desc = 'Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2'
 
@@ -24,7 +32,7 @@ packages = [
 
 setup(
     name='rets',
-    version='0.1.0',
+    version=rets.__version__,
     description='rets',
     long_description=long_desc,
     author='Martin Liu',
@@ -40,6 +48,8 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3 :: Only',

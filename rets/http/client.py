@@ -24,7 +24,7 @@ class RetsHttpClient:
                  base_url: str,
                  login_url: str,
                  auth_type: str = 'digest',
-                 user_agent: str = 'Opendoor/0.1',
+                 user_agent: str = 'PythonRets/0.1',
                  rets_version: str = '1.7.2'):
         self._auth = _get_auth(username, password, auth_type)
         self._user_agent = user_agent
@@ -104,7 +104,9 @@ class RetsHttpClient:
             'id': metadata_id,
         }
         if format_:
-            payload = {**payload, 'Format': format_}
+            payload.update({
+                'Format': format_,
+            })
         return self._http_get(self._url_for('GetMetadata'), payload=payload)
 
     def search(self,
@@ -252,11 +254,14 @@ class RetsHttpClient:
         return urljoin(self._base_url, url)
 
     def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
-        headers = {
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+        headers = headers.update({
             'User-Agent': self.user_agent,
             'RETS-Version': self.rets_version,
-            **(headers or {}),
-        }
+        })
         return requests.get(url, auth=self._auth, headers=headers, params=payload)
 
 

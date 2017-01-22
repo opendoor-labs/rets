@@ -1,6 +1,6 @@
 # rets
 
-Python 3.5 client for the Real Estate Transaction Standard (RETS) Version 1.7.2
+Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2
 
 ### Example
 
@@ -77,3 +77,5 @@ objects = client.get_object(
     location=True,
 )
 ```
+
+Supports Python 3.3 or later
