@@ -1,18 +1,21 @@
+import re
 import sys
 
 from setuptools import setup
-
-import rets
 
 if sys.version_info < (3, 3):
     print('rets requires Python 3.3 or later')
     sys.exit(1)
 
+
+with open('rets/__init__.py') as f:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
+
+
 long_desc = 'Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2'
 
 install_requires = [
     'beautifulsoup4>=4.5.1',
-    'flake8>=3.2.1',
     'lxml>=3.6.4',
     'requests>=2.12.3',
     'requests-toolbelt>=0.7.0',
@@ -20,6 +23,7 @@ install_requires = [
 ]
 
 tests_requires = install_requires + [
+    'flake8>=3.2.1',
     'pytest>=3.0.5',
 ]
 
@@ -31,19 +35,19 @@ packages = [
 ]
 
 setup(
-    name='rets',
-    version=rets.__version__,
-    description='rets',
+    name='rets-python',
+    version=version,
+    description='rets-python',
     long_description=long_desc,
     author='Martin Liu',
     author_email='martin@opendoor.com',
     url='https://github.com/opendoor-labs/rets',
     classifiers=[
-        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Financial and Insurance Industry',
         'Intended Audience :: Information Technology',
         'Intended Audience :: Other Audience',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',

@@ -1,8 +1,17 @@
-# rets
+[![PyPI Version](https://badge.fury.io/py/rets-python.svg)](https://pypi.python.org/pypi/rets-python/)
+[![Code Health](https://landscape.io/github/opendoor-labs/rets/master/landscape.svg?style=flat)](https://landscape.io/github/opendoor-labs/rets/master)
 
-Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2
+# RETS Python 3 Client
 
-### Example
+Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2. Supports Python 3.3 or later.
+
+```
+pip install rets-python
+```
+
+
+
+## Example
 
 Standard usage
 
@@ -77,5 +86,3 @@ objects = client.get_object(
     location=True,
 )
 ```
-
-Supports Python 3.3 or later
