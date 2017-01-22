@@ -20,7 +20,6 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
-signals/frontend/static/.webassets-cache/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

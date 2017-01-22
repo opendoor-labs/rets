@@ -1,6 +1,0 @@
-beautifulsoup4==4.5.1
-flake8==3.2.1
-lxml==3.6.4
-requests==2.12.3
-requests-toolbelt==0.7.0
-udatetime==0.0.11
