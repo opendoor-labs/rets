@@ -22,9 +22,13 @@ install_requires = [
     'udatetime>=0.0.11',
 ]
 
-tests_requires = install_requires + [
-    'flake8>=3.2.1',
-    'pytest>=3.0.5',
+setup_requires = [
+    'pytest-runner',
+]
+
+tests_requires = [
+    'flake8',
+    'pytest',
 ]
 
 packages = [
@@ -64,6 +68,7 @@ setup(
     ],
     license='MIT License',
     install_requires=install_requires,
+    setup_requires=setup_requires,
     tests_require=tests_requires,
     packages=packages,
 )
