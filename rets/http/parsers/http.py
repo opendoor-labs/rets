@@ -1,6 +1,6 @@
 from typing import Any, Sequence, Union
+from xml.etree.ElementTree import XML, Element
 
-from bs4 import BeautifulSoup, Tag
 from requests import Response
 from requests.structures import CaseInsensitiveDict
 from requests_toolbelt.multipart.decoder import BodyPart, MultipartDecoder
@@ -22,19 +22,15 @@ def parse_response(response: Response_) -> Any:
     return parse_body_part(response)
 
 
-def parse_xml(response: Response_) -> Tag:
-    root = BeautifulSoup(response.content, 'lxml-xml')
+def parse_xml(response: Response_) -> Element:
+    root = XML(response.content)
 
-    rets_tag = root.find('RETS')
-    if rets_tag is None:
-        raise RetsParseError('missing RETS tag')
-
-    reply_code = int(rets_tag.attrs['ReplyCode'])
+    reply_code = int(root.get('ReplyCode'))
     if reply_code:
-        reply_text = rets_tag.attrs['ReplyText']
-        raise RetsApiError(reply_code, reply_text, root.prettify())
+        reply_text = root.get('ReplyText')
+        raise RetsApiError(reply_code, reply_text, response.content)
 
-    return rets_tag
+    return root
 
 
 def parse_body_part(response: Response_) -> Object:

@@ -31,7 +31,7 @@ resource_class = resource.get_class('A')
 photo_object_type = resource.get_object_type('HiRes')
 
 # Perform a search query to retrieve some listings
-search_result = resource_class.search(query='(LIST_87=1950-01-01+)', limit=100)
+search_result = resource_class.search(query='(LIST_87=2017-01-01+)', limit=10)
 listings = search_result.data
 
 # Retrieve photos for a single listing
@@ -39,7 +39,10 @@ listing = listings[0]
 photos = listing.get_objects('HiRes', location=True)
 
 # Or retrieve photos for all listings
-all_photos = photo_object_type.get(resource_keys=[listing.__key__ for listing in listings])
+all_photos = photo_object_type.get(
+    resource_keys=[listing.resource_key for listing in listings],
+    location=True,
+)
 ```
 
 Low level RETS HTTP client
@@ -70,7 +73,7 @@ client.get_metadata('table', resource='Property', class_='A')
 search_result = client.search(
     resource='Property',
     class_='A',
-    query='(LIST_87=2016-12-05+)',
+    query='(LIST_87=2017-01-01+)',
     select='LIST_87,LIST_105,LIST_1',
     limit=10,
     count=1,

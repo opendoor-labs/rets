@@ -24,7 +24,7 @@ class RetsHttpClient:
                  base_url: str,
                  login_url: str,
                  auth_type: str = 'digest',
-                 user_agent: str = 'PythonRets/0.1',
+                 user_agent: str = 'rets-python/0.2',
                  rets_version: str = '1.7.2'):
         self._auth = _get_auth(username, password, auth_type)
         self._user_agent = user_agent
@@ -71,42 +71,31 @@ class RetsHttpClient:
                      resource: str = None,
                      class_: str = None,
                      metadata_id: str = '0',
-                     format_: str = 'COMPACT',
                      ) -> Sequence[Metadata]:
         if resource:
             id_ = ':'.join(filter(None, [resource, class_]))
         else:
             id_ = metadata_id
-        return parse_metadata(self._get_metadata(type_, id_, format_))
+        return parse_metadata(self._get_metadata(type_, id_))
 
-    def _get_metadata(self, type_: str, metadata_id: str = '0', format_: str = 'COMPACT'
-                      ) -> Response:
+    def _get_metadata(self, type_: str, metadata_id: str = '0') -> Response:
         """
         :param type_: The type of metadata being requested. The Type MUST begin with METADATA and
             may be one of the defined metadata types (see Section 11).
 
         :param metadata_id: If the last metadata_id is 0 (zero), then the request is for all Type
-            metadata contained within that level; if the last metadata_id is “*”, then the request
+            metadata contained within that level; if the last metadata_id is '*', then the request
             is for all Type metadata contained within that level and all metadata Types contained
             within the requested Type. This means that for a metadata-id of METADATA-SYSTEM, for
             example, the server is expected to return all metadata.
 
             Note: The metadata_id for METADATA-SYSTEM and METADATA-RESOURCE must be 0 or *.
-
-        :param format_: 'COMPACT' means a table descriptor, field list <COLUMNS> followed by a
-            delimited set of the data fields. See Section 11 for more information on the COMPACT
-            formats. 'STANDARD-XML' means an XML presentation of the data in the format defined
-            by the RETS Metadata XML DTD. Servers MUST support all formats. If the format is not
-            specified, the STANDARD-XML presentation will be returned.
         """
         payload = {
             'type': 'METADATA-' + type_.upper(),
             'id': metadata_id,
+            'Format': 'COMPACT',
         }
-        if format_:
-            payload.update({
-                'Format': format_,
-            })
         return self._http_get(self._url_for('GetMetadata'), payload=payload)
 
     def search(self,

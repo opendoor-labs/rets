@@ -1,8 +1,8 @@
 from collections import OrderedDict
 from itertools import zip_longest
 from typing import Iterable, Sequence
+from xml.etree.ElementTree import Element
 
-from bs4 import Tag
 from requests import Response
 
 from rets.http.data import Metadata, Object, SearchResult, SystemMetadata
@@ -31,20 +31,16 @@ def parse_capability_urls(response: Response) -> dict:
             Login=/rets2_1/Login
             Search=/rets2_1/Search
             GetMetadata=/rets2_1/GetMetadata
-            X-SampleLinks=/rets2_1/Links
-            X-SupportSite=http://flexmls.com/rets/
-            X-NotificationFeed=http://retsgw.flexmls.com/atom/feed/private/atom.xml
             GetObject=/rets2_1/GetObject
             Logout=/rets2_1/Logout
-            X-ApiAccessSettings=/rets2_1/API
         </RETS-RESPONSE>
     </RETS>
     """
-    tag = parse_xml(response)
-    response_tag = tag.find('RETS-RESPONSE')
-    if response_tag is None:
+    elem = parse_xml(response)
+    response_elem = elem.find('RETS-RESPONSE')
+    if response_elem is None:
         return {}
-    raw_arguments = response_tag.text.strip().split('\n')
+    raw_arguments = response_elem.text.strip().split('\n')
     return dict((s.strip() for s in arg.split('=', 1)) for arg in raw_arguments)
 
 
@@ -52,30 +48,32 @@ def parse_metadata(response: Response) -> Sequence[Metadata]:
     """
     Parse the information from a GetMetadata transaction.
 
-    <METADATA-RESOURCE Date="2016-11-24T05:24:06Z" Version="01.09.02991">
-        <COLUMNS>	ResourceID	StandardName	</COLUMNS>
-        <DATA>	ActiveAgent	ActiveAgent	</DATA>
-        <DATA>	Office	Office	</DATA>
-        <DATA>	OpenHouse	OpenHouse	</DATA>
-        <DATA>	Property	Property	</DATA>
-        <DATA>	RentalSchedule	RentalSchedule	</DATA>
-    </METADATA-RESOURCE>
+    <RETS ReplyCode="0" ReplyText="Success">
+        <METADATA-RESOURCE Date="2016-11-24T05:24:06Z" Version="01.09.02991">
+            <COLUMNS>	ResourceID	StandardName	</COLUMNS>
+            <DATA>	ActiveAgent	ActiveAgent	</DATA>
+            <DATA>	Office	Office	</DATA>
+            <DATA>	OpenHouse	OpenHouse	</DATA>
+            <DATA>	Property	Property	</DATA>
+            <DATA>	RentalSchedule	RentalSchedule	</DATA>
+        </METADATA-RESOURCE>
+    </RETS>
     """
-    tag = parse_xml(response)
-    metadata_tags = tag.find_all(lambda t: t.name.startswith('METADATA-'))
-    if metadata_tags is None:
+    elem = parse_xml(response)
+    metadata_elems = [e for e in elem.findall('*') if e.tag.startswith('METADATA-')]
+    if metadata_elems is None:
         return ()
 
-    def parse_metadata_tag(tag: Tag) -> Metadata:
-        """ Parses a single <METADATA-X> tag """
+    def parse_metadata_elem(elem: Element) -> Metadata:
+        """ Parses a single <METADATA-X> element """
         return Metadata(
-            type_=tag.name.split('-', 1)[1],
-            resource=tag.attrs.get('Resource'),
-            class_=tag.attrs.get('Class'),
-            data=tuple(_parse_data(tag)),
+            type_=elem.tag.split('-', 1)[1],
+            resource=elem.get('Resource'),
+            class_=elem.get('Class'),
+            data=tuple(_parse_data(elem)),
         )
 
-    return tuple(parse_metadata_tag(metadata_tag) for metadata_tag in metadata_tags)
+    return tuple(parse_metadata_elem(metadata_elem) for metadata_elem in metadata_elems)
 
 
 def parse_system(response: Response) -> SystemMetadata:
@@ -89,38 +87,44 @@ def parse_system(response: Response) -> SystemMetadata:
         </METADATA-SYSTEM>
     </RETS>
     """
-    tag = parse_xml(response)
-    metadata_system_tag = _find_or_raise(tag, 'METADATA-SYSTEM')
-    system_tag = _find_or_raise(tag, 'SYSTEM')
-    comments_tag = metadata_system_tag.find('COMMENTS')
+    elem = parse_xml(response)
+    metadata_system_elem = _find_or_raise(elem, 'METADATA-SYSTEM')
+    system_elem = _find_or_raise(metadata_system_elem, 'SYSTEM')
+    comments_elem = metadata_system_elem.find('COMMENTS')
     return SystemMetadata(
-        system_id=system_tag.attrs['SystemID'],
-        system_description=system_tag.attrs['SystemDescription'],
-        system_date=metadata_system_tag.attrs['Date'],
-        system_version=metadata_system_tag.attrs['Version'],
+        system_id=system_elem.get('SystemID'),
+        system_description=system_elem.get('SystemDescription'),
+        system_date=metadata_system_elem.get('Date'),
+        system_version=metadata_system_elem.get('Version'),
 
         # Optional fields
-        time_zone_offset=system_tag.attrs.get('TimeZoneOffset'),
-        comments=comments_tag and (comments_tag.text or None),
+        time_zone_offset=system_elem.get('TimeZoneOffset'),
+        comments=comments_elem and (comments_elem.text or None),
     )
 
 
 def parse_search(response: Response) -> SearchResult:
     try:
-        tag = parse_xml(response)
+        elem = parse_xml(response)
     except RetsApiError as e:
         if e.reply_code == 20201:  # No records found
             return SearchResult(0, False, ())
         raise
 
-    count_tag = tag.find('COUNT')
+    count_elem = elem.find('COUNT')
+    if count_elem is not None:
+        count = int(count_elem.get('Records'))
+    else:
+        count = None
+
     try:
-        data = tuple(_parse_data(tag))
+        data = tuple(_parse_data(elem))
     except RetsParseError:
         data = None
+
     return SearchResult(
-        count=count_tag and int(count_tag.attrs['Records']),
-        max_rows=bool(tag.find('MAXROWS')),
+        count=count,
+        max_rows=bool(elem.find('MAXROWS')),
         data=data,
     )
 
@@ -129,12 +133,12 @@ def parse_object(response: Response) -> Sequence[Object]:
     return parse_response(response)
 
 
-def _parse_data(tag: Tag) -> Iterable[dict]:
+def _parse_data(elem: Element) -> Iterable[dict]:
     """
-    Parses a generic container tag enclosing a single COLUMNS and multiple DATA tags, and returns
-    a generator of dicts with keys given by the COLUMNS tag and values given by each DATA tag.
-    The container tag may optionally contain a DELIMITER tag to define the delimiter used,
-    otherwise a default of '\t' is assumed.
+    Parses a generic container element enclosing a single COLUMNS and multiple DATA elems, and
+    returns a generator of dicts with keys given by the COLUMNS elem and values given by each
+    DATA elem. The container elem may optionally contain a DELIMITER elem to define the delimiter
+    used, otherwise a default of '\t' is assumed.
 
     <RETS ReplyCode="0" ReplyText="Success">
         <DELIMITER value="09"/>
@@ -146,31 +150,31 @@ def _parse_data(tag: Tag) -> Iterable[dict]:
         <DATA>	2016-12-01T00:14:31	5530021	20161127221848669500000000	</DATA>
     </RETS>
     """
-    delimiter = _parse_delimiter(tag)
+    delimiter = _parse_delimiter(elem)
 
-    columns_tag = _find_or_raise(tag, 'COLUMNS')
-    columns = _parse_data_line(columns_tag, delimiter)
+    columns_elem = _find_or_raise(elem, 'COLUMNS')
+    columns = _parse_data_line(columns_elem, delimiter)
 
-    data_tags = tag.find_all('DATA')
+    data_elems = elem.findall('DATA')
 
     return (OrderedDict(zip_longest(columns, _parse_data_line(data, delimiter)))
-            for data in data_tags)
+            for data in data_elems)
 
 
-def _find_or_raise(tag: Tag, child_tag_name: str) -> Tag:
-    child = tag.find(child_tag_name)
+def _find_or_raise(elem: Element, child_elem_name: str) -> Element:
+    child = elem.find(child_elem_name)
     if child is None:
-        raise RetsParseError('Missing %s tag' % child_tag_name)
+        raise RetsParseError('Missing %s element' % child_elem_name)
     return child
 
 
-def _parse_data_line(tag: Tag, delimiter: str = '\t') -> Sequence[str]:
-    # DATA tags using the COMPACT format and COLUMN tags all start and end with delimiters
-    return tag.text.split(delimiter)[1:-1]
+def _parse_data_line(elem: Element, delimiter: str = '\t') -> Sequence[str]:
+    # DATA elems using the COMPACT format and COLUMN elems all start and end with delimiters
+    return elem.text.split(delimiter)[1:-1]
 
 
-def _parse_delimiter(tag: Tag) -> str:
-    delimiter_tag = tag.find('DELIMITER')
-    if delimiter_tag is None:
+def _parse_delimiter(elem: Element) -> str:
+    delimiter_elem = elem.find('DELIMITER')
+    if delimiter_elem is None:
         return '\t'
-    return chr(int(delimiter_tag.attrs['value']))
+    return chr(int(delimiter_elem.get('value')))

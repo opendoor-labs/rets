@@ -20,8 +20,9 @@ class ObjectType:
             return self._metadata['MIMEType']
         return self._metadata['MimeType']
 
-    def get(self, resource_keys: Union[str, Mapping[str, Any], Sequence[str]]) -> Sequence[Object]:
-        return self._http.get_object(self.resource.name, self.name, resource_keys)
+    def get(self, resource_keys: Union[str, Mapping[str, Any], Sequence[str]],
+            **kwargs) -> Sequence[Object]:
+        return self._http.get_object(self.resource.name, self.name, resource_keys, **kwargs)
 
     def __repr__(self) -> str:
         return '<Object: %s:%s>' % (self.resource.name, self.name)

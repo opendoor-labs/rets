@@ -15,8 +15,6 @@ with open('rets/__init__.py') as f:
 long_desc = 'Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2'
 
 install_requires = [
-    'beautifulsoup4>=4.5.1',
-    'lxml>=3.6.4',
     'requests>=2.12.3',
     'requests-toolbelt>=0.7.0',
     'udatetime>=0.0.11',
