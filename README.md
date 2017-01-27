@@ -22,8 +22,7 @@ from rets.client import RetsClient
 client = RetsClient(
     username='',
     password='',
-    base_url='http://my.rets.server',
-    login_url='/rets/login',
+    login_url='http://my.rets.server/rets/login',
 )
 
 resource = client.get_resource('Property')
@@ -53,8 +52,7 @@ from rets.http import RetsHttpClient
 client = RetsHttpClient(
     username='',
     password='',
-    base_url='http://my.rets.server',
-    login_url='/rets/login',
+    login_url='http://my.rets.server/rets/login',
 )
 
 # Authenticate and fetch available transactions

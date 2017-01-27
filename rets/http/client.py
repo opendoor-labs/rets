@@ -1,5 +1,5 @@
 from typing import Any, Mapping, Sequence, Union
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import requests
 from requests import Response
@@ -21,7 +21,6 @@ class RetsHttpClient:
     def __init__(self,
                  username: str,
                  password: str,
-                 base_url: str,
                  login_url: str,
                  auth_type: str = 'digest',
                  user_agent: str = 'rets-python/0.2',
@@ -29,9 +28,11 @@ class RetsHttpClient:
         self._auth = _get_auth(username, password, auth_type)
         self._user_agent = user_agent
         self._rets_version = rets_version
-        self._base_url = base_url
+
+        splits = urlsplit(login_url)
+        self._base_url = urlunsplit((splits.scheme, splits.netloc, '', '', ''))
         self._capabilities = {
-            'Login': login_url,
+            'Login': splits.path,
         }
 
     @property
