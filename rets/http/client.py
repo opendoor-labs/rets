@@ -1,3 +1,4 @@
+from hashlib import md5
 from typing import Any, Mapping, Sequence, Union
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
@@ -19,14 +20,16 @@ from rets.errors import RetsClientError
 class RetsHttpClient:
 
     def __init__(self,
-                 username: str,
-                 password: str,
                  login_url: str,
+                 username: str = None,
+                 password: str = None,
                  auth_type: str = 'digest',
                  user_agent: str = 'rets-python/0.2',
-                 rets_version: str = '1.7.2'):
-        self._auth = _get_auth(username, password, auth_type)
+                 user_agent_password: str = None,
+                 rets_version: str = '1.7.2',
+                 ):
         self._user_agent = user_agent
+        self._user_agent_password = user_agent_password
         self._rets_version = rets_version
 
         splits = urlsplit(login_url)
@@ -34,6 +37,15 @@ class RetsHttpClient:
         self._capabilities = {
             'Login': splits.path,
         }
+
+        # Authenticate using either the user agent auth header or (basic or digest) HTTP auth.
+        if not user_agent_password:
+            self._http_auth = _get_http_auth(username, password, auth_type)
+        else:
+            self._http_auth = None
+
+        # The session id may be set by the server using the 'RETS-Session-ID' cookie.
+        self._session_id = ''
 
     @property
     def user_agent(self) -> str:
@@ -248,14 +260,30 @@ class RetsHttpClient:
             headers = {}
         else:
             headers = headers.copy()
-        headers = headers.update({
+        headers.update({
             'User-Agent': self.user_agent,
             'RETS-Version': self.rets_version,
         })
-        return requests.get(url, auth=self._auth, headers=headers, params=payload)
+
+        if self._http_auth:
+            response = requests.get(url, auth=self._http_auth, headers=headers, params=payload)
+        else:
+            headers['RETS-UA-Authorization'] = self._user_agent_auth_digest()
+            response = requests.get(url, headers=headers, params=payload)
+
+        self._session_id = response.cookies.get('RETS-Session-ID', '')
+
+        return response
+
+    def _user_agent_auth_digest(self) -> str:
+        user_password = '%s:%s' % (self.user_agent, self._user_agent_password)
+        a1 = md5(user_password.encode()).hexdigest()
+
+        digest_values = '%s::%s:%s' % (a1, self._session_id, self.rets_version)
+        return md5(digest_values.encode()).hexdigest()
 
 
-def _get_auth(username: str, password: str, auth_type: str) -> AuthBase:
+def _get_http_auth(username: str, password: str, auth_type: str) -> AuthBase:
     if auth_type == 'basic':
         return HTTPBasicAuth(username, password)
     if auth_type == 'digest':

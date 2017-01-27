@@ -20,9 +20,12 @@ Standard usage
 from rets.client import RetsClient
 
 client = RetsClient(
+    login_url='http://my.rets.server/rets/login',
     username='',
     password='',
-    login_url='http://my.rets.server/rets/login',
+    # Alternatively authenticate using user agent password
+    # user_agent='',
+    # user_agent_password=''
 )
 
 resource = client.get_resource('Property')
@@ -50,9 +53,12 @@ Low level RETS HTTP client
 from rets.http import RetsHttpClient
 
 client = RetsHttpClient(
+    login_url='http://my.rets.server/rets/login',
     username='',
     password='',
-    login_url='http://my.rets.server/rets/login',
+    # Alternatively authenticate using user agent password
+    # user_agent='',
+    # user_agent_password=''
 )
 
 # Authenticate and fetch available transactions
