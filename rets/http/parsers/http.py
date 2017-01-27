@@ -79,10 +79,19 @@ def parse_multipart(response: Response_) -> Sequence[Any]:
     """
     multipart = MultipartDecoder.from_response(response, response.encoding)
     # We need to decode the headers because MultipartDecoder returns bytes keys and values,
-    # while requests.Response.headers uses string keys and values.
+    # while requests.Response.headers uses str keys and values.
     for part in multipart.parts:
         part.headers = _decode_headers(part.headers, response.encoding)
-    return tuple(parse_response(part) for part in multipart.parts)
+
+    def parse_multipart(parts):
+        for part in parts:
+            try:
+                yield parse_response(part)
+            except RetsApiError as e:
+                if e.reply_code != 20403:  # No object found
+                    raise
+
+    return tuple(parse_multipart(multipart.parts))
 
 
 def _decode_headers(headers: CaseInsensitiveDict, encoding: str) -> CaseInsensitiveDict:
