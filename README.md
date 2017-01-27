@@ -17,47 +17,74 @@ pip install rets-python
 Standard usage
 
 ```python
-from rets.client import RetsClient
+>>> from rets.client import RetsClient
 
-client = RetsClient(
+>>> client = RetsClient(
     login_url='http://my.rets.server/rets/login',
-    username='',
-    password='',
+    username='username',
+    password='password',
     # Alternatively authenticate using user agent password
-    # user_agent='',
+    # user_agent='rets-python/0.3',
     # user_agent_password=''
 )
 
-resource = client.get_resource('Property')
-resource_class = resource.get_class('A')
-photo_object_type = resource.get_object_type('HiRes')
+>>> resource = client.get_resource('Property')
+>>> resource.key_field
+'LIST_1'
 
-# Perform a search query to retrieve some listings
-search_result = resource_class.search(query='(LIST_87=2017-01-01+)', limit=10)
-listings = search_result.data
+>>> resource_class = resource.get_class('A')
+>>> resource_class.has_key_index
+True
 
-# Retrieve photos for a single listing
-listing = listings[0]
-photos = listing.get_objects('HiRes', location=True)
+>>> photo_object_type = resource.get_object_type('HiRes')
+>>> photo_object_type.mime_type
+'image/jpeg'
+```
 
-# Or retrieve photos for all listings
-all_photos = photo_object_type.get(
+You can retrieve listings by performing a search query on the ResourceClass object. The results
+will include any associated search metadata.
+
+```python
+>>> search_result = resource_class.search(query='(LIST_87=2017-01-01+)', limit=10)
+>>> search_result.count
+11941
+>>> search_result.max_rows
+False
+>>> len(search_result.data)
+10
+```
+
+Photos and other object types for a record can be retrieved directly from the record object. They
+can also be retrieved in bulk from the ObjectType object using the resource keys of the records.
+
+```python
+>>> listing = search_result.data[0]
+>>> listing.resource_key
+'20170104191513476022000000'
+>>> listing.get_objects('HiRes', location=True)
+(Object(mime_type='image/jpeg', content_id='20170104191513476022000000', description='Front', object_id='1', url='...', preferred=True, data=None), ...)
+
+>>> all_photos = photo_object_type.get(
     resource_keys=[listing.resource_key for listing in listings],
     location=True,
 )
+>>> len(all_photos)
+232
+>>> all_photos[0]
+Object(mime_type='image/jpeg', content_id='20071218141725529770000000', description='Primary Photo', object_id='1', url='...', preferred=True, data=None)
 ```
 
-Low level RETS HTTP client
+Low level RETS HTTP client usage:
 
 ```python
 from rets.http import RetsHttpClient
 
 client = RetsHttpClient(
     login_url='http://my.rets.server/rets/login',
-    username='',
-    password='',
+    username='username',
+    password='password',
     # Alternatively authenticate using user agent password
-    # user_agent='',
+    # user_agent='rets-python/0.3',
     # user_agent_password=''
 )
 
