@@ -24,7 +24,7 @@ class RetsHttpClient:
                  username: str = None,
                  password: str = None,
                  auth_type: str = 'digest',
-                 user_agent: str = 'rets-python/0.2',
+                 user_agent: str = 'rets-python/0.3',
                  user_agent_password: str = None,
                  rets_version: str = '1.7.2',
                  ):
