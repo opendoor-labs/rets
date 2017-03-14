@@ -271,6 +271,8 @@ class RetsHttpClient:
             headers['RETS-UA-Authorization'] = self._user_agent_auth_digest()
             response = requests.get(url, headers=headers, params=payload)
 
+        response.raise_for_status()
+
         self._session_id = response.cookies.get('RETS-Session-ID', '')
 
         return response

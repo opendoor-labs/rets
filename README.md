@@ -23,6 +23,8 @@ Standard usage
     login_url='http://my.rets.server/rets/login',
     username='username',
     password='password',
+    # Ensure that you are using the right auth_type for this particular MLS
+    # auth_type='basic',
     # Alternatively authenticate using user agent password
     # user_agent='rets-python/0.3',
     # user_agent_password=''
