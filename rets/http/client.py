@@ -44,8 +44,8 @@ class RetsHttpClient:
         else:
             self._http_auth = None
 
-        # The session id may be set by the server using the 'RETS-Session-ID' cookie.
-        self._session_id = ''
+        # we use a session to keep track of cookies that are required for certain MLSes
+        self._session = None
 
     @property
     def user_agent(self) -> str:
@@ -69,12 +69,14 @@ class RetsHttpClient:
         return 'RETS/' + self._rets_version
 
     def login(self) -> dict:
+        self._session = requests.Session()
         response = self._http_get(self._url_for('Login'))
         self._capabilities = parse_capability_urls(response)
         return self._capabilities
 
     def logout(self) -> None:
         self._http_get(self._url_for('Logout'))
+        self._session = None
 
     def get_system_metadata(self) -> SystemMetadata:
         return parse_system(self._get_metadata('system'))
@@ -256,6 +258,8 @@ class RetsHttpClient:
         return urljoin(self._base_url, url)
 
     def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
+        if not self._session:
+            raise RetsClientError('Session not instantiated. Call .login() first')
         if headers is None:
             headers = {}
         else:
@@ -266,14 +270,12 @@ class RetsHttpClient:
         })
 
         if self._http_auth:
-            response = requests.get(url, auth=self._http_auth, headers=headers, params=payload)
+            response = self._session.get(url, auth=self._http_auth, headers=headers, params=payload)
         else:
             headers['RETS-UA-Authorization'] = self._user_agent_auth_digest()
-            response = requests.get(url, headers=headers, params=payload)
+            response = self._session.get(url, headers=headers, params=payload)
 
         response.raise_for_status()
-
-        self._session_id = response.cookies.get('RETS-Session-ID', '')
 
         return response
 
