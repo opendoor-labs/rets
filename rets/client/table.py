@@ -16,7 +16,7 @@ class Table:
         self._fields = fields
 
         self._parsers = {
-            field['SystemName']: get_parser(field['DataType'])
+            field['SystemName']: _get_parser(field['DataType'], field['Interpretation'])
             for field in self._fields
         }
 
@@ -39,14 +39,25 @@ class Table:
         return '<Table: %s:%s>' % (self.resource.name, self.resource_class.name)
 
 
-def get_parser(data_type: str):
+def _get_parser(data_type: str, interpretation: str):
+    if interpretation == _LOOKUP_TYPE:
+        return _LOOKUP_PARSER
+    elif interpretation in _LOOKUP_MULTI_TYPES:
+        return _LOOKUP_MULTI_PARSER
+
     try:
-        return _PARSER_MAPPING[data_type]
+        return _DATA_TYPE_PARSERS[data_type]
     except KeyError:
         raise RetsParseError('unknown data type %s' % data_type) from None
 
 
-_PARSER_MAPPING = {
+_LOOKUP_TYPE = 'Lookup'
+_LOOKUP_PARSER = str
+
+_LOOKUP_MULTI_TYPES = frozenset(('LookupMulti', 'LookupBitstring', 'LookupBitmask'))
+_LOOKUP_MULTI_PARSER = lambda value: tuple(str(value).split(','))
+
+_DATA_TYPE_PARSERS = {
     'Boolean': lambda value: value == '1',
     'Character': str,
     'Date': lambda value: datetime.strptime(value, '%Y-%m-%d'),
