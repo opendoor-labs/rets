@@ -124,7 +124,8 @@ def parse_search(response: Response) -> SearchResult:
 
     return SearchResult(
         count=count,
-        max_rows=bool(elem.find('MAXROWS')),
+        # for some reason bool(elem.find('MAXROWS')) is incorrect
+        max_rows=elem.find('MAXROWS') is not None,
         data=data,
     )
 
