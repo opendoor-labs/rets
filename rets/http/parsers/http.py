@@ -1,4 +1,4 @@
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Sequence, Tuple, Union
 from xml.etree.ElementTree import XML, Element
 
 from requests import Response
@@ -25,15 +25,7 @@ def parse_response(response: Response_) -> Any:
 def parse_xml(response: Response_) -> Element:
     root = XML(response.content)
 
-    # if RETS-STATUS exists, the client must use this instead
-    # of the status from the body-start-line
-    rets_status = parse_rets_status(root)
-
-    if rets_status:
-        reply_code, reply_text = rets_status
-    else:
-        reply_code = int(root.get('ReplyCode'))
-        reply_text = root.get('ReplyText')
+    reply_code, reply_text = parse_rets_status(root)
 
     if reply_code:
         raise RetsApiError(reply_code, reply_text, response.content)
@@ -41,11 +33,14 @@ def parse_xml(response: Response_) -> Element:
     return root
 
 
-def parse_rets_status(elem: Element) -> Optional[Tuple[int, str]]:
-    rets_status = elem.find('RETS-STATUS')
-    if rets_status is None:
-        return None
-    return (int(rets_status.get('ReplyCode')), rets_status.get('ReplyText'))
+def parse_rets_status(root: Element) -> Tuple[int, str]:
+    """
+    If RETS-STATUS exists, the client must use this instead
+    of the status from the body-start-line
+    """
+    rets_status = root.find('RETS-STATUS')
+    elem = rets_status if rets_status is not None else root
+    return (int(elem.get('ReplyCode')), elem.get('ReplyText'))
 
 
 def parse_body_part(response: Response_) -> Object:
