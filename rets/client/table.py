@@ -55,7 +55,7 @@ _LOOKUP_TYPE = 'Lookup'
 _LOOKUP_PARSER = str
 
 _LOOKUP_MULTI_TYPES = frozenset(('LookupMulti', 'LookupBitstring', 'LookupBitmask'))
-_LOOKUP_MULTI_PARSER = lambda value: tuple(str(value).split(','))
+_LOOKUP_MULTI_PARSER = lambda value: str(value).split(',')
 
 _DATA_TYPE_PARSERS = {
     'Boolean': lambda value: value == '1',

@@ -124,7 +124,8 @@ def parse_search(response: Response) -> SearchResult:
 
     return SearchResult(
         count=count,
-        max_rows=bool(elem.find('MAXROWS')),
+        # python xml.etree.ElementTree.Element objects are always considered false-y
+        max_rows=elem.find('MAXROWS') is not None,
         data=data,
     )
 
