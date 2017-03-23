@@ -270,10 +270,10 @@ class RetsHttpClient:
         })
 
         if self._http_auth:
-            response = self._session.get(url, auth=self._http_auth, headers=headers, params=payload)
+            response = self._session.post(url, auth=self._http_auth, headers=headers, data=payload)
         else:
             headers['RETS-UA-Authorization'] = self._user_agent_auth_digest()
-            response = self._session.get(url, headers=headers, params=payload)
+            response = self._session.post(url, headers=headers, data=payload)
 
         response.raise_for_status()
 
