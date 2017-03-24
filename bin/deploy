@@ -16,7 +16,7 @@ deploy_dir="$dir/deploy-worktree-$1"
 rm -rf "$deploy_dir"
 
 show_cmd git worktree add "$deploy_dir" "v$version"
-(show_cmd cd "$deploy_dir" && show_cmd python setup.py bdist_wheel upload)
+(show_cmd cd "$deploy_dir" && show_cmd python setup.py bdist_wheel upload --repository=local)
 show_cmd rm -r "$deploy_dir"
 show_cmd git worktree prune
 echo
