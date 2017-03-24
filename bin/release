@@ -1,0 +1,48 @@
+#!/bin/bash -eu
+
+show_cmd() { echo "\$ $@" >&2; "$@"; echo; }
+show_usage() { echo "Usage: $0 <major|minor|patch>"; exit 1; }
+
+dir="`dirname "$0"`"
+
+if [ "$#" -lt 1 -o "${1:-}" = '-h' -o "${1:-}" = '--help' ]; then
+  show_usage
+fi
+
+part="$1"
+if [ "$part" != 'major' -a "$part" != 'minor' -a "$part" != 'patch' ]; then
+  show_usage
+fi
+
+current_branch="`git branch | grep \* | cut -d ' ' -f2`"
+if [ "$current_branch" != 'master' ]; then
+  echo "Must be on master to release"
+  exit 1
+fi
+
+show_cmd git remote update
+show_cmd "$dir"/_check_remote_matches
+
+show_cmd git status --porcelain
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Working directory not clean"
+  exit 1
+fi
+
+show_cmd bumpversion --verbose --dry-run "$part" 2>&1 | egrep '\$|(Would (add|commit|tag))'
+
+echo
+read -p "You're about to push a new release, continue? " -n 1 -r < /dev/tty
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+  echo
+  show_cmd bumpversion --verbose "$part" 2>&1 | egrep '\$|(Adding changes|Committing|Tagging)'
+  echo
+  show_cmd bumpversion --verbose --no-tag release 2>&1 | egrep '\$|(Adding changes|Committing|Tagging)'
+  echo
+  show_cmd git push
+  show_cmd git push --tags
+  echo
+fi
+
