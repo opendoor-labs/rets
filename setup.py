@@ -1,20 +1,6 @@
-import re
 import sys
 
 from setuptools import setup
-def inject_custom_repository(repository_name):
-    """
-    Ensure that we're not registering or uploading to public repos.
-    """
-    for command in ['register', 'upload']:
-        try:
-            index = sys.argv.index(command)
-        except ValueError:
-            continue
-        sys.argv.insert(index + 1, '--repository=%s' % (repository_name))
-
-
-inject_custom_repository('local')
 
 if sys.version_info < (3, 3):
     print('rets requires Python 3.3 or later')
@@ -27,6 +13,7 @@ install_requires = [
     'requests>=2.12.3',
     'requests-toolbelt>=0.7.0',
     'udatetime>=0.0.11',
+    'docopts'
 ]
 
 setup_requires = [
