@@ -4,19 +4,26 @@ show_cmd() { echo "\$ $@" >&2; "$@"; echo; }
 
 dir="`dirname "$0"`"
 
-if [ "$#" -lt 1 -o "${1:-}" = '-h' -o "${1:-}" = '--help' ]; then
-  echo "Usage: $0 <version-to-release, like 0.0.0>"
-  exit 1
-fi
+eval "$(docopts -h - : "$@" <<EOF
+Usage: $0 <version> [--repository] [<repo>] 
 
-version="$1"
-deploy_dir="$dir/deploy-worktree-$1"
+      <version>     The version you want to release. Format should be major.minor.patch
+      --repository  The repository to deploy to. Options are local, pypi
+EOF
+)"
+
+
+deploy_dir="$dir/deploy-worktree-$version"
 
 # Remove any stale deploy dir from the same version
 rm -rf "$deploy_dir"
 
 show_cmd git worktree add "$deploy_dir" "v$version"
-(show_cmd cd "$deploy_dir" && show_cmd python setup.py bdist_wheel upload --repository=local)
+if [ -z "$repo" ]; then
+  (show_cmd cd "$deploy_dir" && show_cmd python setup.py bdist_wheel upload)
+else
+  (show_cmd cd "$deploy_dir" && show_cmd python setup.py bdist_wheel upload --repository=$repo)
+fi
 show_cmd rm -r "$deploy_dir"
 show_cmd git worktree prune
 echo
