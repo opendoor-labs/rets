@@ -128,11 +128,11 @@ objects = client.get_object(
 
 First create a release, indicating if its a major, minor, or patch release 
 
-```python
+```
 bin/release patch
 ```
 
 Then deploy the package using the version from above. For OD deploys, you will want to do --repository local
-```python
+```
 bin/deploy <version> --repository local
 ```
