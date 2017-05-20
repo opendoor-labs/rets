@@ -83,12 +83,13 @@ class RetsHttpClient:
         if self._cookie_dict:
             for name, value in self._cookie_dict.items():
                 self._session.cookies.set(name, value=value)
-        response = self._http_get(self._url_for('Login'))
+
+        response = self._http_post(self._url_for('Login'))
         self._capabilities = parse_capability_urls(response)
         return self._capabilities
 
     def logout(self) -> None:
-        self._http_get(self._url_for('Logout'))
+        self._http_post(self._url_for('Logout'))
         self._session = None
         self._cookie_dict = None
 
@@ -125,7 +126,7 @@ class RetsHttpClient:
             'id': metadata_id,
             'Format': 'COMPACT',
         }
-        return self._http_get(self._url_for('GetMetadata'), payload=payload)
+        return self._http_post(self._url_for('GetMetadata'), payload=payload)
 
     def search(self,
                resource: str,
@@ -203,7 +204,7 @@ class RetsHttpClient:
         # None values indicate that the argument should be omitted from the request
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
-        rets_response = self._http_get(self._url_for('Search'), payload=payload)
+        rets_response = self._http_post(self._url_for('Search'), payload=payload)
         return parse_search(rets_response)
 
     def get_object(self,
@@ -249,7 +250,7 @@ class RetsHttpClient:
 
         :param location: Flag to indicate whether the object or a URL to the object should be
             returned. If location is set to True, it is up to the server to support this
-            functionality and the lifetime of the return URL is not given by the RETS
+            functionality and the lifetime of the returned URL is not given by the RETS
             specification.
         """
         headers = {
@@ -261,7 +262,7 @@ class RetsHttpClient:
             'ID': _build_entity_object_ids(resource_keys),
             'Location': int(location),
         }
-        response = self._http_get(self._url_for('GetObject'), headers=headers, payload=payload)
+        response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
         return parse_object(response)
 
     def _url_for(self, transaction: str) -> str:
@@ -271,9 +272,10 @@ class RetsHttpClient:
             raise RetsClientError('No URL found for transaction %s' % transaction)
         return urljoin(self._base_url, url)
 
-    def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
+    def _http_post(self, url: str, headers: dict = None, payload: dict = None) -> Response:
         if not self._session:
             raise RetsClientError('Session not instantiated. Call .login() first')
+
         if headers is None:
             headers = {}
         else:
