@@ -21,7 +21,7 @@ class RetsClient:
         for resource in self.resources:
             if resource.name == name:
                 return resource
-        return None
+        raise KeyError('unknown resource %s' % name)
 
     def _fetch_resources(self) -> Sequence[Resource]:
         metadata = self._http.get_metadata('resource')[0].data

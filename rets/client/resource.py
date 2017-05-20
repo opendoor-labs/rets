@@ -29,7 +29,7 @@ class Resource:
         for resource_class in self.classes:
             if resource_class.name == name:
                 return resource_class
-        return None
+        raise KeyError('unknown class %s' % name)
 
     @property
     def object_types(self) -> Sequence[ObjectType]:
@@ -41,7 +41,7 @@ class Resource:
         for resource_object in self.object_types:
             if resource_object.name == name:
                 return resource_object
-        return None
+        raise KeyError('unknown object type %s' % name)
 
     def _fetch_classes(self) -> Sequence[ResourceClass]:
         metadata = self._http.get_metadata('class', resource=self.name)[0].data
