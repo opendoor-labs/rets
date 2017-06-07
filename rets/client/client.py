@@ -3,19 +3,63 @@ from typing import Optional, Sequence
 from rets.client.resource import Resource
 from rets.http import RetsHttpClient
 
+"""
+Example of metadata dict:
+
+metadata = [{
+    'ResourceID': 'Property',
+    'KeyField': 'Matrix_Unique_ID',
+    '_classes': [
+        {
+            'ClassName': 'Listing',
+            'HasKeyIndex': '1',
+            '_table': [
+                ... column fields
+            ],
+        }
+    ],
+    '_object_types': [
+        'ObjectType': 'LargePhoto',
+        'MIMEType': 'image/jpeg',
+    ]
+}, {
+    'ResourceID': 'Agent',
+    'KeyField': 'Matrix_Unique_ID',
+    '_classes': [
+        {
+            'ClassName': 'Listing',
+            'HasKeyIndex': '1',
+        }
+    ],
+}]
+"""
+
 
 class RetsClient:
 
-    def __init__(self, *args, http_client: RetsHttpClient = None, metadata: dict = None, **kwargs):
-        self._http = http_client or RetsHttpClient(*args, **kwargs)
-        self._http.login()
-        self._metadata = metadata or {}
+    def __init__(self,
+                 *args,
+                 http_client: RetsHttpClient = None,
+                 metadata: Sequence[dict] = (),
+                 capability_urls: dict = None,
+                 cookie_dict: dict = None,
+                 **kwargs):
+        self.http = http_client or RetsHttpClient(*args, **kwargs)
+        if not (capability_urls and cookie_dict):
+            self.http.login()
+        self._resources = self._resources_from_metadata(metadata)
+
+    @property
+    def metadata(self) -> Sequence[dict]:
+        return tuple(resource.metadata for resource in self._resources)
 
     @property
     def resources(self) -> Sequence[Resource]:
-        if '_resources' not in self._metadata:
-            self._metadata['_resources'] = self._fetch_resources()
-        return self._metadata['_resources']
+        if not self._resources:
+            # TODO(ML) Differentiate between not having the metadata and
+            # having an empty metadata
+            self._resources = self._fetch_resources()
+        return self._resources
 
     def get_resource(self, name: str) -> Optional[Resource]:
         for resource in self.resources:
@@ -24,5 +68,9 @@ class RetsClient:
         raise KeyError('unknown resource %s' % name)
 
     def _fetch_resources(self) -> Sequence[Resource]:
-        metadata = self._http.get_metadata('resource')[0].data
-        return tuple(Resource(m, self._http) for m in metadata)
+        # Sends get_metadata request to RETS server
+        metadata = self.http.get_metadata('resource')[0].data
+        return self._resources_from_metadata(metadata)
+
+    def _resources_from_metadata(self, metadata: Sequence[dict]) -> Sequence[Resource]:
+        return tuple(Resource(m, self.http) for m in metadata)

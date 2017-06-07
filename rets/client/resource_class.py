@@ -1,4 +1,4 @@
-from typing import Mapping, Sequence, Union
+from typing import Mapping, Sequence, Union, Optional
 
 from rets.client.table import Table
 from rets.client.record import Record
@@ -12,6 +12,7 @@ class ResourceClass:
         self.resource = resource
         self._http = http_client
         self._metadata = metadata
+        self._table = self._table_from_metadata(metadata.get('_table', {}))
 
     @property
     def name(self) -> str:
@@ -22,10 +23,17 @@ class ResourceClass:
         return 'HasKeyIndex' in self._metadata and self._metadata['HasKeyIndex'] == '1'
 
     @property
+    def metadata(self) -> dict:
+        metadata = dict(self._metadata)
+        if self._table:
+            metadata['_table'] = self._table.metadata
+        return metadata
+
+    @property
     def table(self) -> Table:
-        if '_table' not in self._metadata:
-            self._metadata['_table'] = self._fetch_table()
-        return self._metadata['_table']
+        if not self._table:
+            self._table = self._fetch_table()
+        return self._table
 
     def search(self,
                query: Union[str, Mapping[str, str]],
@@ -51,9 +59,14 @@ class ResourceClass:
         )
 
     def _fetch_table(self) -> Table:
-        metadata = self._http.get_metadata('table', resource=self.resource.name,
-                                           class_=self.name)[0].data
-        return Table(self, metadata)
+        table_metadata = self._http.get_metadata('table', resource=self.resource.name,
+                                                 class_=self.name)[0].data
+        return self._table_from_metadata(table_metadata)
+
+    def _table_from_metadata(self, table_metadata: Sequence[dict]) -> Optional[Table]:
+        if not table_metadata:
+            return None
+        return Table(self, table_metadata)
 
     def _validate_query(self, query: Union[str, Mapping[str, str]]) -> str:
         if isinstance(query, str):

@@ -21,6 +21,10 @@ class Table:
         }
 
     @property
+    def metadata(self) -> Sequence[dict]:
+        return tuple(self._fields)
+
+    @property
     def fields(self) -> Set[str]:
         return set(self._parsers)
 
