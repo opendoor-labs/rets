@@ -44,7 +44,9 @@ class RetsClient:
                  capability_urls: dict = None,
                  cookie_dict: dict = None,
                  **kwargs):
-        self.http = http_client or RetsHttpClient(*args, **kwargs)
+        self.http = http_client or RetsHttpClient(*args,
+                                                  capability_urls=capability_urls, cookie_dict=cookie_dict,
+                                                  **kwargs)
         if not (capability_urls and cookie_dict):
             self.http.login()
         self._resources = self._resources_from_metadata(metadata)
