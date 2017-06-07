@@ -10,6 +10,8 @@ class Resource:
     def __init__(self, metadata: dict, http_client: RetsHttpClient):
         self._http = http_client
         self._metadata = metadata
+        self._classes = self._classes_from_metadata(metadata.get('_classes', ()))
+        self._object_types = self._object_types_from_metadata(metadata.get('_object_types', ()))
 
     @property
     def name(self) -> str:
@@ -20,36 +22,51 @@ class Resource:
         return self._metadata['KeyField']
 
     @property
+    def metadata(self) -> dict:
+        metadata = dict(self._metadata)
+        if self._classes:
+            metadata['_classes'] = tuple(resource_class.metadata for resource_class in self._classes)
+        if self._object_types:
+            metadata['_object_types'] = tuple(object_type.metadata for object_type in self._object_types)
+        return metadata
+
+    @property
     def classes(self) -> Sequence[ResourceClass]:
-        if '_classes' not in self._metadata:
-            self._metadata['_classes'] = self._fetch_classes()
-        return self._metadata['_classes']
+        if not self._classes:
+            self._classes = self._fetch_classes()
+        return self._classes
 
     def get_class(self, name: str) -> Optional[ResourceClass]:
         for resource_class in self.classes:
             if resource_class.name == name:
                 return resource_class
-        return None
+        raise KeyError('unknown class %s' % name)
 
     @property
     def object_types(self) -> Sequence[ObjectType]:
-        if '_object_types' not in self._metadata:
-            self._metadata['_object_types'] = self._fetch_object_types()
-        return self._metadata['_object_types']
+        if not self._object_types:
+            self._object_types = self._fetch_object_types()
+        return self._object_types
 
     def get_object_type(self, name: str) -> Optional[ObjectType]:
         for resource_object in self.object_types:
             if resource_object.name == name:
                 return resource_object
-        return None
+        raise KeyError('unknown object type %s' % name)
 
     def _fetch_classes(self) -> Sequence[ResourceClass]:
         metadata = self._http.get_metadata('class', resource=self.name)[0].data
-        return tuple(ResourceClass(self, m, self._http) for m in metadata)
+        return self._classes_from_metadata(metadata)
 
     def _fetch_object_types(self) -> Sequence[ObjectType]:
         metadata = self._http.get_metadata('object', resource=self.name)[0].data
-        return tuple(ObjectType(self, m, self._http) for m in metadata)
+        return self._object_types_from_metadata(metadata)
+
+    def _classes_from_metadata(self, classes_metadata: Sequence[dict]) -> Sequence[ResourceClass]:
+        return tuple(ResourceClass(self, m, self._http) for m in classes_metadata)
+
+    def _object_types_from_metadata(self, object_types_metadata: Sequence[dict]) -> Sequence[ObjectType]:
+        return tuple(ObjectType(self, m, self._http) for m in object_types_metadata)
 
     def __repr__(self) -> str:
         return '<Resource: %s>' % self.name

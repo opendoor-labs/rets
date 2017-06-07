@@ -20,6 +20,10 @@ class ObjectType:
             return self._metadata['MIMEType']
         return self._metadata['MimeType']
 
+    @property
+    def metadata(self) -> dict:
+        return dict(self._metadata)
+
     def get(self, resource_keys: Union[str, Mapping[str, Any], Sequence[str]],
             **kwargs) -> Sequence[Object]:
         return self._http.get_object(self.resource.name, self.name, resource_keys, **kwargs)

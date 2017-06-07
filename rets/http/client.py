@@ -27,6 +27,7 @@ class RetsHttpClient:
                  user_agent: str = 'rets-python/0.3',
                  user_agent_password: str = None,
                  rets_version: str = '1.7.2',
+                 capability_urls: str = None,
                  cookie_dict: dict = None
                  ):
         self._user_agent = user_agent
@@ -35,7 +36,7 @@ class RetsHttpClient:
 
         splits = urlsplit(login_url)
         self._base_url = urlunsplit((splits.scheme, splits.netloc, '', '', ''))
-        self._capabilities = {
+        self._capabilities = capability_urls or {
             'Login': splits.path,
         }
 
@@ -46,13 +47,14 @@ class RetsHttpClient:
             self._http_auth = None
 
         # we use a session to keep track of cookies that are required for certain MLSes
-        self._session = None
+        self._session = requests.Session()
 
         # The user may provide an optional cookie_dict argument, which will be used on first login.
         # When sending cookies (with a session_id) to the login url, the same cookie (session_id)
-        # is returned, which (most likely) means no additional login is created. On logout,
-        # this str is destroyed, and login will fetch a new cookies
-        self._cookie_dict = cookie_dict
+        # is returned, which (most likely) means no additional login is created.
+        if cookie_dict:
+            for name, value in cookie_dict.items():
+                self._session.cookies.set(name, value=value)
 
         # this session id is part of the rets standard for use with a user agent password
         self._rets_session_id = ''
@@ -78,19 +80,22 @@ class RetsHttpClient:
         """
         return 'RETS/' + self._rets_version
 
+    @property
+    def capability_urls(self) -> dict:
+        return self._capabilities
+
+    @property
+    def cookie_dict(self) -> dict:
+        return dict(self._session.cookies)
+
     def login(self) -> dict:
-        self._session = requests.Session()
-        if self._cookie_dict:
-            for name, value in self._cookie_dict.items():
-                self._session.cookies.set(name, value=value)
-        response = self._http_get(self._url_for('Login'))
+        response = self._http_post(self._url_for('Login'))
         self._capabilities = parse_capability_urls(response)
         return self._capabilities
 
     def logout(self) -> None:
-        self._http_get(self._url_for('Logout'))
+        self._http_post(self._url_for('Logout'))
         self._session = None
-        self._cookie_dict = None
 
     def get_system_metadata(self) -> SystemMetadata:
         return parse_system(self._get_metadata('system'))
@@ -125,7 +130,7 @@ class RetsHttpClient:
             'id': metadata_id,
             'Format': 'COMPACT',
         }
-        return self._http_get(self._url_for('GetMetadata'), payload=payload)
+        return self._http_post(self._url_for('GetMetadata'), payload=payload)
 
     def search(self,
                resource: str,
@@ -203,7 +208,7 @@ class RetsHttpClient:
         # None values indicate that the argument should be omitted from the request
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
-        rets_response = self._http_get(self._url_for('Search'), payload=payload)
+        rets_response = self._http_post(self._url_for('Search'), payload=payload)
         return parse_search(rets_response)
 
     def get_object(self,
@@ -249,7 +254,7 @@ class RetsHttpClient:
 
         :param location: Flag to indicate whether the object or a URL to the object should be
             returned. If location is set to True, it is up to the server to support this
-            functionality and the lifetime of the return URL is not given by the RETS
+            functionality and the lifetime of the returned URL is not given by the RETS
             specification.
         """
         headers = {
@@ -261,7 +266,7 @@ class RetsHttpClient:
             'ID': _build_entity_object_ids(resource_keys),
             'Location': int(location),
         }
-        response = self._http_get(self._url_for('GetObject'), headers=headers, payload=payload)
+        response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
         return parse_object(response)
 
     def _url_for(self, transaction: str) -> str:
@@ -271,9 +276,10 @@ class RetsHttpClient:
             raise RetsClientError('No URL found for transaction %s' % transaction)
         return urljoin(self._base_url, url)
 
-    def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
+    def _http_post(self, url: str, headers: dict = None, payload: dict = None) -> Response:
         if not self._session:
             raise RetsClientError('Session not instantiated. Call .login() first')
+
         if headers is None:
             headers = {}
         else:
