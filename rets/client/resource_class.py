@@ -2,6 +2,7 @@ from typing import Mapping, Sequence, Union, Optional
 
 from rets.client.table import Table
 from rets.client.record import Record
+from rets.client.utils import get_metadata_data
 from rets.errors import RetsClientError
 from rets.http import RetsHttpClient, SearchResult
 
@@ -59,8 +60,7 @@ class ResourceClass:
         )
 
     def _fetch_table(self) -> Table:
-        table_metadata = self._http.get_metadata('table', resource=self.resource.name,
-                                                 class_=self.name)[0].data
+        table_metadata = get_metadata_data(self._http, 'table', resource=self.resource.name, class_=self.name)
         return self._table_from_metadata(table_metadata)
 
     def _table_from_metadata(self, table_metadata: Sequence[dict]) -> Optional[Table]:
