@@ -1,6 +1,7 @@
 from typing import Optional, Sequence
 
 from rets.client.resource import Resource
+from rets.client.utils import get_metadata_data
 from rets.http import RetsHttpClient
 
 """
@@ -70,8 +71,7 @@ class RetsClient:
         raise KeyError('unknown resource %s' % name)
 
     def _fetch_resources(self) -> Sequence[Resource]:
-        # Sends get_metadata request to RETS server
-        metadata = self.http.get_metadata('resource')[0].data
+        metadata = get_metadata_data(self.http, 'resource')
         return self._resources_from_metadata(metadata)
 
     def _resources_from_metadata(self, metadata: Sequence[dict]) -> Sequence[Resource]:

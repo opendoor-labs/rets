@@ -2,6 +2,7 @@ from typing import Optional, Sequence
 
 from rets.client.resource_class import ResourceClass
 from rets.client.object_type import ObjectType
+from rets.client.utils import get_metadata_data
 from rets.http import RetsHttpClient
 
 
@@ -55,11 +56,11 @@ class Resource:
         raise KeyError('unknown object type %s' % name)
 
     def _fetch_classes(self) -> Sequence[ResourceClass]:
-        metadata = self._http.get_metadata('class', resource=self.name)[0].data
+        metadata = get_metadata_data(self._http, 'class', resource=self.name)
         return self._classes_from_metadata(metadata)
 
     def _fetch_object_types(self) -> Sequence[ObjectType]:
-        metadata = self._http.get_metadata('object', resource=self.name)[0].data
+        metadata = get_metadata_data(self._http, 'object', resource=self.name)
         return self._object_types_from_metadata(metadata)
 
     def _classes_from_metadata(self, classes_metadata: Sequence[dict]) -> Sequence[ResourceClass]:

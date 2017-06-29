@@ -14,7 +14,7 @@ from rets.http.parsers.parse import (
     parse_system,
 )
 from rets.http.data import Object, Metadata, SearchResult, SystemMetadata
-from rets.errors import RetsClientError
+from rets.errors import RetsApiError, RetsClientError
 
 
 class RetsHttpClient:
@@ -110,7 +110,13 @@ class RetsHttpClient:
             id_ = ':'.join(filter(None, [resource, class_]))
         else:
             id_ = metadata_id
-        return parse_metadata(self._get_metadata(type_, id_))
+
+        try:
+            return parse_metadata(self._get_metadata(type_, id_))
+        except RetsApiError as e:
+            if e.reply_code == 20503:  # No Metadata found
+                return ()
+            raise
 
     def _get_metadata(self, type_: str, metadata_id: str = '0') -> Response:
         """
