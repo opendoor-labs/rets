@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
 from typing import Any, Set, Sequence
 
@@ -55,6 +55,11 @@ def _get_parser(data_type: str, interpretation: str):
         raise RetsParseError('unknown data type %s' % data_type) from None
 
 
+def _parse_time(value: str) -> time:
+    parsed_datetime = udatetime.from_string('1970-01-01T' + value)
+    return parsed_datetime.time().replace(tzinfo=parsed_datetime.tzinfo)
+
+
 _LOOKUP_TYPE = 'Lookup'
 _LOOKUP_PARSER = str
 
@@ -66,6 +71,7 @@ _DATA_TYPE_PARSERS = {
     'Character': str,
     'Date': lambda value: datetime.strptime(value, '%Y-%m-%d'),
     'DateTime': udatetime.from_string,
+    'Time': _parse_time,
     'Tiny': int,
     'Small': int,
     'Int': int,
