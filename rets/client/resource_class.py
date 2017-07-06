@@ -40,6 +40,7 @@ class ResourceClass:
                query: Union[str, Mapping[str, str]],
                fields: Sequence[str] = None,
                parse: bool = True,
+               include_tz: bool = False,
                **kwargs) -> SearchResult:
         query = self._validate_query(query)
         if fields:
@@ -56,7 +57,7 @@ class ResourceClass:
         return SearchResult(
             count=result.count,
             max_rows=result.max_rows,
-            data=tuple(Record(self, row, parse=parse) for row in result.data),
+            data=tuple(Record(self, row, parse=parse, include_tz=include_tz) for row in result.data),
         )
 
     def _fetch_table(self) -> Table:
