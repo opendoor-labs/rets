@@ -28,16 +28,16 @@ class Table:
     def fields(self) -> Set[str]:
         return set(self._parsers)
 
-    def parse(self, row: dict) -> dict:
+    def parse(self, row: dict, include_tz: bool = False) -> dict:
         return OrderedDict(
-            (field, self.parse_field(field, value))
+            (field, self.parse_field(field, value, include_tz))
             for field, value in row.items()
         )
 
-    def parse_field(self, field: str, value: str) -> Any:
+    def parse_field(self, field: str, value: str, include_tz: bool = False) -> Any:
         if value == '':
             return None
-        return self._parsers[field](value)
+        return self._parsers[field](value, include_tz=include_tz)
 
     def __repr__(self) -> str:
         return '<Table: %s:%s>' % (self.resource.name, self.resource_class.name)
@@ -45,9 +45,9 @@ class Table:
 
 def _get_parser(data_type: str, interpretation: str):
     if interpretation == _LOOKUP_TYPE:
-        return _LOOKUP_PARSER
+        return _parse_str
     elif interpretation in _LOOKUP_MULTI_TYPES:
-        return _LOOKUP_MULTI_PARSER
+        return _parse_multi
 
     try:
         return _DATA_TYPE_PARSERS[data_type]
@@ -55,26 +55,55 @@ def _get_parser(data_type: str, interpretation: str):
         raise RetsParseError('unknown data type %s' % data_type) from None
 
 
-def _parse_time(value: str) -> time:
-    parsed_datetime = udatetime.from_string('1970-01-01T' + value)
+def _parse_boolean(value: str, **kwargs) -> bool:
+    return value == '1'
+
+
+def _parse_str(value: str, **kwargs) -> str:
+    return str(value)
+
+
+def _parse_int(value: str, **kwargs) -> int:
+    return int(value)
+
+
+def _parse_decimal(value: str, **kwargs) -> Decimal:
+    return Decimal(value)
+
+
+def _parse_date(value: str, **kwargs) -> datetime:
+    return datetime.strptime(value, '%Y-%m-%d')
+
+
+def _parse_datetime(value: str, include_tz: bool, **kwargs) -> datetime:
+    parsed_datetime = udatetime.from_string(value)
+    if not include_tz:
+        return parsed_datetime.replace(tzinfo=None) + parsed_datetime.utcoffset()
+    return parsed_datetime
+
+
+def _parse_time(value: str, include_tz: bool, **kwargs) -> time:
+    parsed_datetime = _parse_datetime('1970-01-01T' + value, include_tz)
     return parsed_datetime.time().replace(tzinfo=parsed_datetime.tzinfo)
 
 
+def _parse_multi(value: str, **kwargs) -> Sequence[str]:
+    return str(value).split(',')
+
+
 _LOOKUP_TYPE = 'Lookup'
-_LOOKUP_PARSER = str
 
 _LOOKUP_MULTI_TYPES = frozenset(('LookupMulti', 'LookupBitstring', 'LookupBitmask'))
-_LOOKUP_MULTI_PARSER = lambda value: str(value).split(',')
 
 _DATA_TYPE_PARSERS = {
-    'Boolean': lambda value: value == '1',
-    'Character': str,
-    'Date': lambda value: datetime.strptime(value, '%Y-%m-%d'),
-    'DateTime': udatetime.from_string,
+    'Boolean': _parse_boolean,
+    'Character': _parse_str,
+    'Date': _parse_date,
+    'DateTime': _parse_datetime,
     'Time': _parse_time,
-    'Tiny': int,
-    'Small': int,
-    'Int': int,
-    'Long': int,
-    'Decimal': Decimal,
+    'Tiny': _parse_int,
+    'Small': _parse_int,
+    'Int': _parse_int,
+    'Long': _parse_int,
+    'Decimal': _parse_decimal,
 }
