@@ -2,7 +2,7 @@ from rets.client import RetsClient
 from rets.http.client import RetsHttpClient
 
 __title__ = 'rets'
-__version__ = '0.3.6-dev'
+__version__ = '0.3.7'
 __author__ = 'Martin Liu <martin@opendoor.com>'
 __license__ = 'MIT License'
 
