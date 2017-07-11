@@ -131,7 +131,12 @@ def parse_search(response: Response) -> SearchResult:
 
 
 def parse_object(response: Response) -> Sequence[Object]:
-    return parse_response(response)
+    try:
+        return parse_response(response)
+    except RetsApiError as e:
+        if e.reply_code == 20403:  # No object found
+            return ()
+        raise
 
 
 def _parse_data(elem: Element) -> Iterable[dict]:
