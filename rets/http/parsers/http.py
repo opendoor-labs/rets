@@ -10,6 +10,8 @@ from rets.errors import RetsApiError, RetsParseError
 
 Response_ = Union[Response, BodyPart]
 
+DEFAULT_ENCODING = 'utf-8'
+
 
 def parse_response(response: Response_) -> Any:
     content_type = response.headers['content-type']
@@ -87,11 +89,12 @@ def parse_multipart(response: Response_) -> Sequence[Any]:
 
     --simple boundary--
     """
-    multipart = MultipartDecoder.from_response(response, response.encoding)
+    encoding = response.encoding or DEFAULT_ENCODING
+    multipart = MultipartDecoder.from_response(response, encoding)
     # We need to decode the headers because MultipartDecoder returns bytes keys and values,
     # while requests.Response.headers uses str keys and values.
     for part in multipart.parts:
-        part.headers = _decode_headers(part.headers, response.encoding)
+        part.headers = _decode_headers(part.headers, encoding)
 
     def parse_multipart(parts):
         for part in parts:
