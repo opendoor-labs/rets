@@ -6,7 +6,7 @@ import requests
 from requests import Response
 from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
 
-from rets.http.parsers.parse import (
+from rets.http.parsers import (
     parse_capability_urls,
     parse_metadata,
     parse_object,

@@ -1,13 +1,27 @@
 from collections import OrderedDict
 from itertools import zip_longest
-from typing import Iterable, Sequence
-from xml.etree.ElementTree import Element
+from typing import Iterable, Sequence, Tuple, Union
+from xml.etree.ElementTree import XML, Element
 
 from requests import Response
+from requests_toolbelt.multipart.decoder import BodyPart
 
-from rets.http.data import Metadata, Object, SearchResult, SystemMetadata
-from rets.http.parsers.http import parse_xml, parse_response
 from rets.errors import RetsParseError, RetsApiError
+from rets.http.data import Metadata, SearchResult, SystemMetadata
+
+DEFAULT_ENCODING = 'utf-8'
+
+ResponseLike = Union[Response, BodyPart]
+
+
+def parse_xml(response: ResponseLike) -> Element:
+    root = XML(response.content)
+
+    reply_code, reply_text = _parse_rets_status(root)
+    if reply_code:
+        raise RetsApiError(reply_code, reply_text, response.content)
+
+    return root
 
 
 def parse_capability_urls(response: Response) -> dict:
@@ -130,13 +144,14 @@ def parse_search(response: Response) -> SearchResult:
     )
 
 
-def parse_object(response: Response) -> Sequence[Object]:
-    try:
-        return parse_response(response)
-    except RetsApiError as e:
-        if e.reply_code == 20403:  # No object found
-            return ()
-        raise
+def _parse_rets_status(root: Element) -> Tuple[int, str]:
+    """
+    If RETS-STATUS exists, the client must use this instead
+    of the status from the body-start-line
+    """
+    rets_status = root.find('RETS-STATUS')
+    elem = rets_status if rets_status is not None else root
+    return int(elem.get('ReplyCode')), elem.get('ReplyText')
 
 
 def _parse_data(elem: Element) -> Iterable[dict]:
