@@ -39,10 +39,7 @@ then
   echo
   show_cmd bumpversion --verbose "$part" 2>&1 | egrep '\$|(Adding changes|Committing|Tagging)'
   echo
-  show_cmd bumpversion --verbose --no-tag release 2>&1 | egrep '\$|(Adding changes|Committing|Tagging)'
-  echo
   show_cmd git push
   show_cmd git push --tags
   echo
 fi
-
