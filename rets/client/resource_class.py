@@ -1,6 +1,6 @@
-from typing import Mapping, Sequence, Union, Optional
+from typing import FrozenSet, Mapping, Sequence, Union
 
-from rets.client.table import Table
+from rets.client.decoder import RecordDecoder
 from rets.client.record import Record
 from rets.client.utils import get_metadata_data
 from rets.errors import RetsClientError
@@ -13,7 +13,8 @@ class ResourceClass:
         self.resource = resource
         self._http = http_client
         self._metadata = metadata
-        self._table = self._table_from_metadata(metadata.get('_table', {}))
+        self._table = metadata.get('_table')
+        self._fields = None
 
     @property
     def name(self) -> str:
@@ -21,20 +22,26 @@ class ResourceClass:
 
     @property
     def has_key_index(self) -> bool:
-        return 'HasKeyIndex' in self._metadata and self._metadata['HasKeyIndex'] == '1'
+        return self._metadata.get('HasKeyIndex') == '1'
 
     @property
     def metadata(self) -> dict:
         metadata = dict(self._metadata)
         if self._table:
-            metadata['_table'] = self._table.metadata
+            metadata['_table'] = self._table
         return metadata
 
     @property
-    def table(self) -> Table:
-        if not self._table:
-            self._table = self._fetch_table()
+    def table(self) -> Sequence[dict]:
+        if self._table is None:
+            self._table = tuple(get_metadata_data(self._http, 'table', resource=self.resource.name, class_=self.name))
         return self._table
+
+    @property
+    def fields(self) -> FrozenSet[str]:
+        if self._fields is None:
+            self._fields = frozenset(field['SystemName'] for field in self.table)
+        return self._fields
 
     def search(self,
                query: Union[str, Mapping[str, str]],
@@ -54,20 +61,17 @@ class ResourceClass:
             **kwargs,
         )
 
+        if parse:
+            decoder = RecordDecoder(self.table, include_tz)
+            rows = decoder.decode(result.data)
+        else:
+            rows = result.data
+
         return SearchResult(
             count=result.count,
             max_rows=result.max_rows,
-            data=tuple(Record(self, row, parse=parse, include_tz=include_tz) for row in result.data),
+            data=tuple(Record(self, row) for row in rows),
         )
-
-    def _fetch_table(self) -> Table:
-        table_metadata = get_metadata_data(self._http, 'table', resource=self.resource.name, class_=self.name)
-        return self._table_from_metadata(table_metadata)
-
-    def _table_from_metadata(self, table_metadata: Sequence[dict]) -> Optional[Table]:
-        if not table_metadata:
-            return None
-        return Table(self, table_metadata)
 
     def _validate_query(self, query: Union[str, Mapping[str, str]]) -> str:
         if isinstance(query, str):
@@ -80,7 +84,7 @@ class ResourceClass:
         return ','.join(fields)
 
     def _assert_fields(self, fields: Sequence[str]) -> None:
-        permissible = self.table.fields
+        permissible = self.fields
         invalid = tuple(f for f in fields if f not in permissible)
         if invalid:
             raise RetsClientError('invalid fields %s' % ','.join(invalid))

@@ -5,14 +5,11 @@ from rets.http import Object
 
 class Record:
 
-    def __init__(self, resource_class, data: dict, parse: bool = True, include_tz: bool = False):
+    def __init__(self, resource_class, data: dict):
         self.resource = resource_class.resource
         self.resource_class = resource_class
         self.resource_key = str(data[resource_class.resource.key_field])
-
-        self.data = self.resource_class.table.parse(data, include_tz=include_tz) if parse else data
-
-        self._raw_data = data
+        self.data = data
 
     def get_objects(self, name: str, **kwargs) -> Sequence[Object]:
         resource_object = self.resource.get_object_type(name)
