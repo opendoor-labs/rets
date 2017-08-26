@@ -87,16 +87,12 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
 
     location = headers.get('location')
     if location:
-        mime_type, _ = mimetypes.guess_type(location)
         data = None
     else:
-        # Parse mime type from content-type header, e.g.
-        # 'image/jpeg;charset=US-ASCII' -> 'image/jpeg'
-        mime_type, _ = cgi.parse_header(headers['content-type'])
         data = part.content or None
 
     return Object(
-        mime_type=mime_type,
+        mime_type=_guess_mime_type(headers),
         content_id=headers['content-id'],
         description=headers.get('content-description'),
         object_id=headers['object-id'],
@@ -104,6 +100,18 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
         preferred='Preferred' in headers,
         data=data,
     )
+
+
+def _guess_mime_type(headers: CaseInsensitiveDict) -> Optional[str]:
+    location = headers.get('location')
+    if location:
+        mime_type, _ = mimetypes.guess_type(location)
+        if mime_type:
+            return mime_type
+
+    # Parse mime type from content-type header, e.g. 'image/jpeg;charset=US-ASCII' -> 'image/jpeg'
+    mime_type, _ = cgi.parse_header(headers.get('content-type', ''))
+    return mime_type or None
 
 
 def _decode_headers(headers: CaseInsensitiveDict, encoding: str) -> CaseInsensitiveDict:
