@@ -6,7 +6,7 @@
 
 # RETS Python 3 Client
 
-Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2. Supports Python 3.3 or later.
+Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2. Supports Python 3.5 or later.
 
 ```
 pip install rets-python
