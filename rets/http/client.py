@@ -86,7 +86,11 @@ class RetsHttpClient:
 
     @property
     def cookie_dict(self) -> dict:
-        return dict(self._session.cookies)
+        """Keeps the last value in case of duplicate keys."""
+        cookie_d = {}
+        for k, v in self._session.cookies.itervalues():
+            cookie_d[k] = v
+        return cookie_d
 
     def login(self) -> dict:
         response = self._http_post(self._url_for('Login'))
