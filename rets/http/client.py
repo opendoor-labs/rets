@@ -88,7 +88,7 @@ class RetsHttpClient:
     def cookie_dict(self) -> dict:
         """Keeps the last value in case of duplicate keys."""
         cookie_d = {}
-        for k, v in self._session.cookies.itervalues():
+        for k, v in self._session.cookies.iteritems():
             cookie_d[k] = v
         return cookie_d
 
