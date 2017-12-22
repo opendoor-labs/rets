@@ -18,7 +18,7 @@ def parse_xml(response: ResponseLike) -> Element:
     root = XML(response.content)
 
     reply_code, reply_text = _parse_rets_status(root)
-    if reply_code:
+    if reply_code and reply_text != "Operation Successful":
         raise RetsApiError(reply_code, reply_text, response.content)
 
     return root
