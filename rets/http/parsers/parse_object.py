@@ -1,9 +1,9 @@
 import mimetypes
 from typing import Optional, Sequence
+import cgi
 
 from requests import Response
 from requests.structures import CaseInsensitiveDict
-from requests.utils import cgi
 from requests_toolbelt.multipart.decoder import MultipartDecoder
 
 from rets.errors import RetsApiError, RetsParseError
