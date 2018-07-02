@@ -34,7 +34,7 @@ packages = [
 
 setup(
     name='rets-python',
-    version='0.3.11',
+    version='0.4.0',
     description='rets-python',
     long_description=long_desc,
     author='Martin Liu',
