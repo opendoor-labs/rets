@@ -67,6 +67,9 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
 
 
 def _decode_datetime(value: str, include_tz: bool) -> datetime:
+    # Correct `0000-00-00 00:00` to `0000-00-00T00:00`
+    if value[10] == ' ':
+        value = '%sT%s' % (value[0:10], value[11:])
     decoded = udatetime.from_string(value)
     if not include_tz:
         return decoded.astimezone(timezone.utc).replace(tzinfo=None)
