@@ -81,6 +81,14 @@ def _decode_time(value: str, include_tz: bool) -> time:
     return decoded.time().replace(tzinfo=decoded.tzinfo)
 
 
+def _decode_date(value: str, include_tz: bool) -> datetime:
+    try:
+        decoded = datetime.strptime(value, '%Y-%m-%d')
+        return decoded
+    except ValueError:
+        return _decode_datetime(value, include_tz)
+
+
 _LOOKUP_TYPE = 'Lookup'
 
 _LOOKUP_MULTI_TYPES = frozenset(('LookupMulti', 'LookupBitstring', 'LookupBitmask'))
@@ -88,12 +96,12 @@ _LOOKUP_MULTI_TYPES = frozenset(('LookupMulti', 'LookupBitstring', 'LookupBitmas
 _TIMEZONE_AWARE_DECODERS = {
     'DateTime': _decode_datetime,
     'Time': _decode_time,
+    'Date': _decode_date,
 }
 
 _DECODERS = {
     'Boolean': lambda value: value == '1',
     'Character': str,
-    'Date': lambda value: datetime.strptime(value, '%Y-%m-%d'),
     'Tiny': int,
     'Small': int,
     'Int': int,

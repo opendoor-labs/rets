@@ -8,6 +8,7 @@ from rets.client.decoder import (
     _get_decoder,
     _decode_datetime,
     _decode_time,
+    _decode_date,
 )
 
 
@@ -145,3 +146,8 @@ def test_decode_time():
     assert _decode_time('03:04:05-00:00', False) == time(3, 4, 5)
     assert _decode_time('12:00:00+07:08', False) == time(4, 52)
     assert _decode_time('12:00:00-07:08', False) == time(19, 8)
+
+
+def test_decode_date():
+    assert _decode_date('2017-01-02T00:00:00.000', False) == datetime(2017, 1, 2, 0, 0, 0)
+    assert _decode_date('2017-01-02', False) == datetime(2017, 1, 2, 0, 0, 0)
