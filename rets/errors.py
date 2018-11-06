@@ -18,3 +18,11 @@ class RetsApiError(RetsClientError):
         self.reply_code = reply_code
         self.reply_text = reply_text
         self.xml = xml
+
+
+class RetsContentTypeError(RetsClientError):
+
+    def __init__(self, content: str, headers: dict):
+        super().__init__('Unexpected content type in response')
+        self.content = content
+        self.headers = headers

@@ -6,7 +6,7 @@ from requests import Response
 from requests.structures import CaseInsensitiveDict
 from requests_toolbelt.multipart.decoder import MultipartDecoder
 
-from rets.errors import RetsApiError, RetsParseError
+from rets.errors import RetsApiError, RetsContentTypeError
 from rets.http.data import Object
 from rets.http.parsers.parse import DEFAULT_ENCODING, ResponseLike, parse_xml
 
@@ -20,13 +20,13 @@ def parse_object(response: Response) -> Sequence[Object]:
     The body of the response should contain the binary content of the object,
     an XML document specifying a transaction status code, or left empty.
     """
-    content_type = response.headers['content-type']
+    content_type = response.headers.get('content-type')
 
-    if 'multipart/parallel' in content_type:
+    if content_type and 'multipart/parallel' in content_type:
         return _parse_multipart(response)
-    else:
-        object_ = _parse_body_part(response)
-        return (object_,) if object_ is not None else ()
+
+    object_ = _parse_body_part(response)
+    return (object_,) if object_ is not None else ()
 
 
 def _parse_multipart(response: ResponseLike) -> Sequence[Object]:
@@ -73,7 +73,27 @@ def _parse_multipart(response: ResponseLike) -> Sequence[Object]:
 
 def _parse_body_part(part: ResponseLike) -> Optional[Object]:
     headers = part.headers
-    content_type = headers['content-type']
+
+    content_id = headers['content-id']
+    object_id = headers['object-id']
+    preferred = 'Preferred' in headers
+    description = headers.get('content-description')
+    location = headers.get('location')
+    content_type = headers.get('content-type')
+
+    if location:
+        return Object(
+            mime_type=_guess_mime_type(location, content_type),
+            content_id=content_id,
+            description=description,
+            object_id=object_id,
+            url=location,
+            preferred=preferred,
+            data=None,
+        )
+
+    if not content_type or 'text/html' in content_type:
+        raise RetsContentTypeError(part.content, part.headers)
 
     if 'text/xml' in content_type:
         try:
@@ -82,35 +102,28 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
             if e.reply_code == 20403:  # No object found
                 return None
             raise
-    elif 'text/html' in content_type:
-        raise RetsParseError(part.content)
-
-    location = headers.get('location')
-    if location:
-        data = None
-    else:
-        data = part.content or None
 
     return Object(
-        mime_type=_guess_mime_type(headers),
-        content_id=headers['content-id'],
-        description=headers.get('content-description'),
-        object_id=headers['object-id'],
-        url=location,
-        preferred='Preferred' in headers,
-        data=data,
+        mime_type=_parse_mime_type(content_type),
+        content_id=content_id,
+        description=description,
+        object_id=object_id,
+        url=None,
+        preferred=preferred,
+        data=part.content or None,
     )
 
 
-def _guess_mime_type(headers: CaseInsensitiveDict) -> Optional[str]:
-    location = headers.get('location')
-    if location:
-        mime_type, _ = mimetypes.guess_type(location)
-        if mime_type:
-            return mime_type
+def _guess_mime_type(location: str, content_type: Optional[str] = None) -> Optional[str]:
+    mime_type, _ = mimetypes.guess_type(location)
+    if mime_type:
+        return mime_type
+    return _parse_mime_type(content_type) if content_type else None
 
+
+def _parse_mime_type(content_type: str) -> Optional[str]:
     # Parse mime type from content-type header, e.g. 'image/jpeg;charset=US-ASCII' -> 'image/jpeg'
-    mime_type, _ = cgi.parse_header(headers.get('content-type', ''))
+    mime_type, _ = cgi.parse_header(content_type)
     return mime_type or None
 
 
