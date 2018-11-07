@@ -1,6 +1,6 @@
 from requests.structures import CaseInsensitiveDict
 from rets import Object
-from rets.http.parsers.parse_object import parse_object, _guess_mime_type
+from rets.http.parsers.parse_object import parse_object, _guess_mime_type, _parse_mime_type
 from tests.utils import make_response
 
 
@@ -227,19 +227,15 @@ def test_parse_object_location_true_content_type_xml():
 
 def test_guess_mime_type():
     # Can guess from URL extension
-    assert 'image/jpeg' == _guess_mime_type(CaseInsensitiveDict({'Location': 'http://cdn.rets.com/1.jpg'}))
-    assert 'image/png' == _guess_mime_type(CaseInsensitiveDict({'Location': 'http://cdn.rets.com/1.png'}))
-    assert 'application/pdf' == _guess_mime_type(CaseInsensitiveDict({'Location': 'http://cdn.rets.com/1.pdf'}))
+    assert 'image/jpeg' == _guess_mime_type('http://cdn.rets.com/1.jpg')
+    assert 'image/png' == _guess_mime_type('http://cdn.rets.com/1.png')
+    assert 'application/pdf' == _guess_mime_type('http://cdn.rets.com/1.pdf')
 
     # Can guess from content type if extension is missing
-    assert 'image/jpeg' == _guess_mime_type(CaseInsensitiveDict({
-        'Location': 'http://cdn.rets.com/1',
-        'Content-Type': 'image/jpeg',
-    }))
+    assert 'image/jpeg' == _guess_mime_type('http://cdn.rets.com/1', 'image/jpeg')
 
     # Can guess from content type
-    assert 'image/jpeg' == _guess_mime_type(CaseInsensitiveDict({'Content-Type': 'image/jpeg'}))
-    assert 'image/jpeg' == _guess_mime_type(CaseInsensitiveDict({'Content-Type': 'image/jpeg;charset=US-ASCII'}))
+    assert 'image/jpeg' == _parse_mime_type('image/jpeg')
+    assert 'image/jpeg' == _parse_mime_type('image/jpeg;charset=US-ASCII')
 
-    assert None == _guess_mime_type(CaseInsensitiveDict({'Content-Type': ''}))
-    assert None == _guess_mime_type(CaseInsensitiveDict())
+    assert None == _guess_mime_type('')
