@@ -6,7 +6,7 @@ from requests import Response
 from requests.structures import CaseInsensitiveDict
 from requests_toolbelt.multipart.decoder import MultipartDecoder
 
-from rets.errors import RetsApiError, RetsContentTypeError
+from rets.errors import RetsApiError, RetsResponseError
 from rets.http.data import Object
 from rets.http.parsers.parse import DEFAULT_ENCODING, ResponseLike, parse_xml
 
@@ -74,12 +74,15 @@ def _parse_multipart(response: ResponseLike) -> Sequence[Object]:
 def _parse_body_part(part: ResponseLike) -> Optional[Object]:
     headers = part.headers
 
-    content_id = headers['content-id']
-    object_id = headers['object-id']
+    content_id = headers.get('content-id')
+    object_id = headers.get('object-id')
     preferred = 'Preferred' in headers
     description = headers.get('content-description')
     location = headers.get('location')
     content_type = headers.get('content-type')
+
+    if not content_id or not object_id:
+        raise RetsResponseError(part.content, part.headers)
 
     if location:
         return Object(
@@ -93,7 +96,7 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
         )
 
     if not content_type or 'text/html' in content_type:
-        raise RetsContentTypeError(part.content, part.headers)
+        raise RetsResponseError(part.content, part.headers)
 
     if 'text/xml' in content_type:
         try:
