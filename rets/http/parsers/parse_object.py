@@ -76,17 +76,29 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
 
     content_id = headers.get('content-id')
     object_id = headers.get('object-id')
-    preferred = 'Preferred' in headers
+    preferred = 'preferred' in headers
     description = headers.get('content-description')
     location = headers.get('location')
     content_type = headers.get('content-type')
+    mime_type = _parse_mime_type(content_type) if content_type else None
 
+    # Check XML responses first, it may contain an error description.
+    if mime_type == 'text/xml':
+        try:
+            parse_xml(part)
+        except RetsApiError as e:
+            if e.reply_code == 20403:  # No object found
+                return None
+            raise
+
+    # All RETS responses _must_ have `Content-ID` and `Object-ID` headers.
     if not content_id or not object_id:
         raise RetsResponseError(part.content, part.headers)
 
+    # Respond with `Location` header redirect.
     if location:
         return Object(
-            mime_type=_guess_mime_type(location, content_type),
+            mime_type=_guess_mime_type(location) or mime_type,
             content_id=content_id,
             description=description,
             object_id=object_id,
@@ -95,19 +107,12 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
             data=None,
         )
 
-    if not content_type or 'text/html' in content_type:
+    # Check the `Content-Type` header exists for object responses.
+    if mime_type is None or mime_type == 'text/html':
         raise RetsResponseError(part.content, part.headers)
 
-    if 'text/xml' in content_type:
-        try:
-            parse_xml(part)
-        except RetsApiError as e:
-            if e.reply_code == 20403:  # No object found
-                return None
-            raise
-
     return Object(
-        mime_type=_parse_mime_type(content_type),
+        mime_type=mime_type,
         content_id=content_id,
         description=description,
         object_id=object_id,
@@ -117,11 +122,9 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
     )
 
 
-def _guess_mime_type(location: str, content_type: Optional[str] = None) -> Optional[str]:
+def _guess_mime_type(location: str) -> Optional[str]:
     mime_type, _ = mimetypes.guess_type(location)
-    if mime_type:
-        return mime_type
-    return _parse_mime_type(content_type) if content_type else None
+    return mime_type
 
 
 def _parse_mime_type(content_type: str) -> Optional[str]:
