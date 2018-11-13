@@ -230,12 +230,11 @@ def test_guess_mime_type():
     assert 'image/jpeg' == _guess_mime_type('http://cdn.rets.com/1.jpg')
     assert 'image/png' == _guess_mime_type('http://cdn.rets.com/1.png')
     assert 'application/pdf' == _guess_mime_type('http://cdn.rets.com/1.pdf')
+    assert None == _guess_mime_type('')
 
-    # Can guess from content type if extension is missing
-    assert 'image/jpeg' == _guess_mime_type('http://cdn.rets.com/1', 'image/jpeg')
 
+def test_parse_mime_type():
     # Can guess from content type
     assert 'image/jpeg' == _parse_mime_type('image/jpeg')
     assert 'image/jpeg' == _parse_mime_type('image/jpeg;charset=US-ASCII')
-
-    assert None == _guess_mime_type('')
+    assert None == _parse_mime_type('')
