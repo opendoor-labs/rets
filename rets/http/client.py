@@ -1,6 +1,6 @@
 from hashlib import md5
 from typing import Any, Mapping, Sequence, Union
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit, urlencode
 
 import requests
 from requests import Response
@@ -27,12 +27,14 @@ class RetsHttpClient:
                  user_agent: str = 'rets-python/0.3',
                  user_agent_password: str = None,
                  rets_version: str = '1.7.2',
+                 use_post_method: bool = True,
                  capability_urls: str = None,
                  cookie_dict: dict = None
                  ):
         self._user_agent = user_agent
         self._user_agent_password = user_agent_password
         self._rets_version = rets_version
+        self._use_post_method = use_post_method
 
         splits = urlsplit(login_url)
         self._base_url = urlunsplit((splits.scheme, splits.netloc, '', '', ''))
@@ -40,8 +42,9 @@ class RetsHttpClient:
             'Login': splits.path,
         }
 
-        # Authenticate using either the user agent auth header or (basic or digest) HTTP auth.
-        if not user_agent_password:
+        # Authenticate using either the user agent auth header and (basic or digest) HTTP auth.
+        # SFARMLS (San Francisco) use both two methods.
+        if username and password:
             self._http_auth = _get_http_auth(username, password, auth_type)
         else:
             self._http_auth = None
@@ -58,6 +61,8 @@ class RetsHttpClient:
 
         # this session id is part of the rets standard for use with a user agent password
         self._rets_session_id = ''
+
+        self._session.headers['RETS-UA-Authorization'] = 'Digest %s' % (self._user_agent_auth_digest())
 
     @property
     def user_agent(self) -> str:
@@ -93,12 +98,18 @@ class RetsHttpClient:
         return cookie_d
 
     def login(self) -> dict:
-        response = self._http_post(self._url_for('Login'))
+        if self._use_post_method:
+            response = self._http_post(self._url_for('Login'))
+        else:
+            response = self._http_get(self._url_for('Login'))
         self._capabilities = parse_capability_urls(response)
         return self._capabilities
 
     def logout(self) -> None:
-        self._http_post(self._url_for('Logout'))
+        if self._use_post_method:
+            self._http_post(self._url_for('Logout'))
+        else:
+            self._http_get(self._url_for('Logout'))
         self._session = None
 
     def get_system_metadata(self) -> SystemMetadata:
@@ -140,7 +151,11 @@ class RetsHttpClient:
             'id': metadata_id,
             'Format': 'COMPACT',
         }
-        return self._http_post(self._url_for('GetMetadata'), payload=payload)
+        if self._use_post_method:
+            response = self._http_post(self._url_for('GetMetadata'), payload=payload)
+        else:
+            response = self._http_get('%s?%s' % (self._url_for('GetMetadata'), urlencode(payload)))
+        return response
 
     def search(self,
                resource: str,
@@ -218,7 +233,10 @@ class RetsHttpClient:
         # None values indicate that the argument should be omitted from the request
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
-        rets_response = self._http_post(self._url_for('Search'), payload=payload)
+        if self._use_post_method:
+            rets_response = self._http_post(self._url_for('Search'), payload=payload)
+        else:
+            rets_response = self._http_get(self._url_for('Search'), payload=payload)
         return parse_search(rets_response)
 
     def get_object(self,
@@ -276,7 +294,10 @@ class RetsHttpClient:
             'ID': _build_entity_object_ids(resource_keys),
             'Location': int(location),
         }
-        response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
+        if self._use_post_method:
+            response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
+        else:
+            response = self._http_get(self._url_for('GetObject'), headers=headers, payload=payload)
         return parse_object(response)
 
     def _url_for(self, transaction: str) -> str:
@@ -285,6 +306,32 @@ class RetsHttpClient:
         except KeyError:
             raise RetsClientError('No URL found for transaction %s' % transaction)
         return urljoin(self._base_url, url)
+
+    def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
+        if not self._session:
+            raise RetsClientError('Session not instantiated. Call .login() first')
+
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+        headers.update({
+            'User-Agent': self.user_agent,
+            'RETS-Version': self.rets_version,
+        })
+
+        if payload is not None:
+            url = '%s?%s' % (url, urlencode(payload))
+
+        response = self._session.get(url, headers=headers, auth=self._http_auth)
+
+        response.raise_for_status()
+
+        if not self._rets_session_id:
+            self._rets_session_id = response.cookies.get('RETS-Session-ID', '')
+            self._session.headers['RETS-UA-Authorization'] = 'Digest %s' % (self._user_agent_auth_digest())
+
+        return response
 
     def _http_post(self, url: str, headers: dict = None, payload: dict = None) -> Response:
         if not self._session:
