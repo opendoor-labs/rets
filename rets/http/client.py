@@ -29,12 +29,12 @@ class RetsHttpClient:
                  rets_version: str = '1.7.2',
                  capability_urls: str = None,
                  cookie_dict: dict = None,
-                 use_post_method: bool = True
+                 use_get_method: bool = False
                  ):
         self._user_agent = user_agent
         self._user_agent_password = user_agent_password
         self._rets_version = rets_version
-        self._use_post_method = use_post_method
+        self._use_get_method = use_get_method
 
         splits = urlsplit(login_url)
         self._base_url = urlunsplit((splits.scheme, splits.netloc, '', '', ''))
@@ -99,18 +99,18 @@ class RetsHttpClient:
         return cookie_d
 
     def login(self) -> dict:
-        if self._use_post_method:
-            response = self._http_post(self._url_for('Login'))
-        else:
+        if self._use_get_method:
             response = self._http_get(self._url_for('Login'))
+        else:
+            response = self._http_post(self._url_for('Login'))
         self._capabilities = parse_capability_urls(response)
         return self._capabilities
 
     def logout(self) -> None:
-        if self._use_post_method:
-            self._http_post(self._url_for('Logout'))
-        else:
+        if self._use_get_method:
             self._http_get(self._url_for('Logout'))
+        else:
+            self._http_post(self._url_for('Logout'))
         self._session = None
 
     def get_system_metadata(self) -> SystemMetadata:
@@ -152,10 +152,10 @@ class RetsHttpClient:
             'id': metadata_id,
             'Format': 'COMPACT',
         }
-        if self._use_post_method:
-            response = self._http_post(self._url_for('GetMetadata'), payload=payload)
-        else:
+        if self._use_get_method:
             response = self._http_get(self._url_for('GetMetadata'), payload=payload)
+        else:
+            response = self._http_post(self._url_for('GetMetadata'), payload=payload)
         return response
 
     def search(self,
@@ -234,10 +234,10 @@ class RetsHttpClient:
         # None values indicate that the argument should be omitted from the request
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
-        if self._use_post_method:
-            rets_response = self._http_post(self._url_for('Search'), payload=payload)
-        else:
+        if self._use_get_method:
             rets_response = self._http_get(self._url_for('Search'), payload=payload)
+        else:
+            rets_response = self._http_post(self._url_for('Search'), payload=payload)
         return parse_search(rets_response)
 
     def get_object(self,
@@ -295,10 +295,10 @@ class RetsHttpClient:
             'ID': _build_entity_object_ids(resource_keys),
             'Location': int(location),
         }
-        if self._use_post_method:
-            response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
-        else:
+        if self._use_get_method:
             response = self._http_get(self._url_for('GetObject'), headers=headers, payload=payload)
+        else:
+            response = self._http_post(self._url_for('GetObject'), headers=headers, payload=payload)
         return parse_object(response)
 
     def _url_for(self, transaction: str) -> str:
