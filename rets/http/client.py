@@ -27,9 +27,9 @@ class RetsHttpClient:
                  user_agent: str = 'rets-python/0.3',
                  user_agent_password: str = None,
                  rets_version: str = '1.7.2',
-                 use_post_method: bool = True,
                  capability_urls: str = None,
-                 cookie_dict: dict = None
+                 cookie_dict: dict = None,
+                 use_post_method: bool = True
                  ):
         self._user_agent = user_agent
         self._user_agent_password = user_agent_password
@@ -62,6 +62,7 @@ class RetsHttpClient:
         # this session id is part of the rets standard for use with a user agent password
         self._rets_session_id = ''
 
+        # initialize RETS-UA-Authorization with empty RETS Session ID (for GET transaction)
         self._session.headers['RETS-UA-Authorization'] = 'Digest %s' % (self._user_agent_auth_digest())
 
     @property
@@ -154,7 +155,7 @@ class RetsHttpClient:
         if self._use_post_method:
             response = self._http_post(self._url_for('GetMetadata'), payload=payload)
         else:
-            response = self._http_get('%s?%s' % (self._url_for('GetMetadata'), urlencode(payload)))
+            response = self._http_get(self._url_for('GetMetadata'), payload=payload)
         return response
 
     def search(self,
@@ -315,11 +316,13 @@ class RetsHttpClient:
             headers = {}
         else:
             headers = headers.copy()
+        # Add required headers.
         headers.update({
             'User-Agent': self.user_agent,
             'RETS-Version': self.rets_version,
         })
 
+        # If payload exists, convert to query string and append to url.
         if payload is not None:
             url = '%s?%s' % (url, urlencode(payload))
 
@@ -327,6 +330,8 @@ class RetsHttpClient:
 
         response.raise_for_status()
 
+        # For GET Method transaction, RETS-UA-Authorization is always required.
+        # RETS-UA-Authorization must re-calculate when RETS Session ID changes.
         if not self._rets_session_id:
             self._rets_session_id = response.cookies.get('RETS-Session-ID', '')
             self._session.headers['RETS-UA-Authorization'] = 'Digest %s' % (self._user_agent_auth_digest())
