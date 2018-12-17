@@ -107,4 +107,5 @@ _DECODERS = {
     'Int': int,
     'Long': int,
     'Decimal': Decimal,
+    'Timestamp': datetime.now()
 }
