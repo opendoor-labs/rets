@@ -125,6 +125,7 @@ def test_decode_datetime():
     assert _decode_datetime('2017-01-02T12:00:00+07:08', False) == datetime(2017, 1, 2, 4, 52)
     assert _decode_datetime('2017-01-02T12:00:00-07:08', False) == datetime(2017, 1, 2, 19, 8)
     assert _decode_datetime('2017-01-01 00:00:00', False) == datetime(2017, 1, 1, 0, 0)
+    assert _decode_datetime('2017-01-01', False) == datetime(2017, 1, 1, 0, 0)
 
 
 def test_decode_time():
