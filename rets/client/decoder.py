@@ -112,4 +112,5 @@ _DECODERS = {
     'Int': int,
     'Long': int,
     'Decimal': Decimal,
+    'Number': int,
 }

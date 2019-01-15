@@ -95,6 +95,9 @@ def test_get_decoder():
     parser = _get_decoder('Character', 'LookupMulti')
     assert parser('a,b,c') == ['a', 'b', 'c']
 
+    parser = _get_decoder('Number', '')
+    assert parser('214') == 214
+
 
 def test_decode_datetime():
     assert _decode_datetime('2017-01-02T03:04:05', True) == \
