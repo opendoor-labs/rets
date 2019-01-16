@@ -10,8 +10,8 @@ if sys.version_info < (3, 5):
 long_desc = 'Python 3 client for the Real Estate Transaction Standard (RETS) Version 1.7.2'
 
 install_requires = [
-    'requests>=2.12.3',
-    'requests-toolbelt>=0.7.0',
+    'requests>=2.21.0',
+    'requests-toolbelt>=0.8.0',
     'udatetime==0.0.16',
     'docopts',
 ]
