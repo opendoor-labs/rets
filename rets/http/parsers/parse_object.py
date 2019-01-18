@@ -1,6 +1,7 @@
 import mimetypes
 from typing import Optional, Sequence
 import cgi
+from xml.etree.ElementTree import ParseError
 
 from requests import Response
 from requests.structures import CaseInsensitiveDict
@@ -90,6 +91,13 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
             if e.reply_code == 20403:  # No object found
                 return None
             raise
+        except ParseError:
+            # We get incorrect XML - ignore it.
+            # Note: when you query for objects for multiple listings. If the first
+            # listing returns the incorrect XML then the rest of the query will be
+            # ignored as well. In these cases, ensure that you iterate through every
+            # listing one-by-one.
+            return None
 
     # All RETS responses _must_ have `Content-ID` and `Object-ID` headers.
     if not content_id or not object_id:
