@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from itertools import zip_longest
 from typing import Iterable, Sequence, Tuple, Union
-from xml.etree.ElementTree import XML, Element
+from lxml import etree
 
 from requests import Response
 from requests_toolbelt.multipart.decoder import BodyPart
@@ -14,8 +14,11 @@ DEFAULT_ENCODING = 'utf-8'
 ResponseLike = Union[Response, BodyPart]
 
 
-def parse_xml(response: ResponseLike) -> Element:
-    root = XML(response.content)
+def parse_xml(response: ResponseLike) -> etree.Element:
+    root = etree.fromstring(response.content.decode(DEFAULT_ENCODING), parser=etree.XMLParser(recover=True))
+
+    if root is None:
+        raise RetsApiError(500, "Could not parse response from RETS", response.content)
 
     reply_code, reply_text = _parse_rets_status(root)
     if reply_code and reply_text != "Operation Successful":
@@ -78,7 +81,7 @@ def parse_metadata(response: Response) -> Sequence[Metadata]:
     if metadata_elems is None:
         return ()
 
-    def parse_metadata_elem(elem: Element) -> Metadata:
+    def parse_metadata_elem(elem: etree.Element) -> Metadata:
         """ Parses a single <METADATA-X> element """
         return Metadata(
             type_=elem.tag.split('-', 1)[1],
@@ -144,7 +147,7 @@ def parse_search(response: Response) -> SearchResult:
     )
 
 
-def _parse_rets_status(root: Element) -> Tuple[int, str]:
+def _parse_rets_status(root: etree.Element) -> Tuple[int, str]:
     """
     If RETS-STATUS exists, the client must use this instead
     of the status from the body-start-line
@@ -154,7 +157,7 @@ def _parse_rets_status(root: Element) -> Tuple[int, str]:
     return int(elem.get('ReplyCode')), elem.get('ReplyText')
 
 
-def _parse_data(elem: Element) -> Iterable[dict]:
+def _parse_data(elem: etree.Element) -> Iterable[dict]:
     """
     Parses a generic container element enclosing a single COLUMNS and multiple DATA elems, and
     returns a generator of dicts with keys given by the COLUMNS elem and values given by each
@@ -182,19 +185,19 @@ def _parse_data(elem: Element) -> Iterable[dict]:
             for data in data_elems)
 
 
-def _find_or_raise(elem: Element, child_elem_name: str) -> Element:
+def _find_or_raise(elem: etree.Element, child_elem_name: str) -> etree.Element:
     child = elem.find(child_elem_name)
     if child is None:
         raise RetsParseError('Missing %s element' % child_elem_name)
     return child
 
 
-def _parse_data_line(elem: Element, delimiter: str = '\t') -> Sequence[str]:
+def _parse_data_line(elem: etree.Element, delimiter: str = '\t') -> Sequence[str]:
     # DATA elems using the COMPACT format and COLUMN elems all start and end with delimiters
     return elem.text.split(delimiter)[1:-1]
 
 
-def _parse_delimiter(elem: Element) -> str:
+def _parse_delimiter(elem: etree.Element) -> str:
     delimiter_elem = elem.find('DELIMITER')
     if delimiter_elem is None:
         return '\t'

@@ -14,6 +14,7 @@ install_requires = [
     'requests-toolbelt>=0.7.0',
     'udatetime==0.0.16',
     'docopts',
+    'lxml>=4.3.0',
 ]
 
 setup_requires = [
