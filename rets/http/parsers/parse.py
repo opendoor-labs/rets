@@ -6,7 +6,7 @@ from lxml import etree
 from requests import Response
 from requests_toolbelt.multipart.decoder import BodyPart
 
-from rets.errors import RetsParseError, RetsApiError
+from rets.errors import RetsParseError, RetsApiError, RetsResponseError
 from rets.http.data import Metadata, SearchResult, SystemMetadata
 
 DEFAULT_ENCODING = 'utf-8'
@@ -18,7 +18,7 @@ def parse_xml(response: ResponseLike) -> etree.Element:
     root = etree.fromstring(response.content.decode(DEFAULT_ENCODING), parser=etree.XMLParser(recover=True))
 
     if root is None:
-        raise RetsApiError(500, "Could not parse response from RETS", response.content)
+        raise RetsResponseError(response.content, response.headers)
 
     reply_code, reply_text = _parse_rets_status(root)
     if reply_code and reply_text != "Operation Successful":
