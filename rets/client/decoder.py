@@ -34,7 +34,7 @@ class RecordDecoder:
         for row in rows:
             try:
                 ret.append(OrderedDict((field, decode_field(field, value)) for field, value in row.items()))
-            except InvalidOperation:
+            except (InvalidOperation, ValueError):
                 # Temporarily skip invalid rows in CARETS
                 continue
         return ret
