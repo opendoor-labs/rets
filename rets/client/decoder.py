@@ -2,7 +2,7 @@ import logging
 import re
 from collections import OrderedDict
 from datetime import datetime, time, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import partial
 from typing import Any, Sequence
 
@@ -30,9 +30,14 @@ class RecordDecoder:
             if value == '':
                 return None
             return decoders[field](value)
-
-        return tuple(OrderedDict((field, decode_field(field, value)) for field, value in row.items())
-                     for row in rows)
+        ret = []
+        for row in rows:
+            try:
+                ret.append(OrderedDict((field, decode_field(field, value)) for field, value in row.items()))
+            except InvalidOperation:
+                # Temporarily skip invalid rows in CARETS
+                continue
+        return ret
 
     def _build_decoders(self, fields: Sequence[str]) -> dict:
         decoders = {}
