@@ -62,9 +62,6 @@ class RetsHttpClient:
         # this session id is part of the rets standard for use with a user agent password
         self._rets_session_id = ''
 
-        # initialize RETS-UA-Authorization with empty RETS Session ID (for GET transaction)
-        self._session.headers['RETS-UA-Authorization'] = 'Digest %s' % (self._user_agent_auth_digest())
-
     @property
     def user_agent(self) -> str:
         """
@@ -293,48 +290,25 @@ class RetsHttpClient:
         return urljoin(self._base_url, url)
 
     def _http_request(self, url: str, headers: dict = None, payload: dict = None) -> Response:
+        if not self._session:
+            raise RetsClientError('Session not instantiated. Call .login() first')
+
+        request_headers = {
+            **(headers or {}),
+            'User-Agent': self.user_agent,
+            'RETS-Version': self.rets_version,
+            'RETS-UA-Authorization': self._rets_ua_authorization()
+        }
+
         if self._use_get_method:
-            return self._http_get(url, headers, payload)
-        return self._http_post(url, headers, payload)
+            if payload:
+                url = '%s?%s' % (url, urlencode(payload))
+            response = self._http_get(url, auth=self._http_auth, headers=request_headers)
+        else:
+            response = self._http_post(url, auth=self._http_auth, headers=request_headers, payload=payload)
 
-    def _http_get(self, url: str, headers: dict = None, payload: dict = None) -> Response:
-        if not self._session:
-            raise RetsClientError('Session not instantiated. Call .login() first')
-
-        request_headers = {
-            **(headers or {}),
-            'User-Agent': self.user_agent,
-            'RETS-Version': self.rets_version,
-            'RETS-UA-Authorization': self._rets_ua_authorization()
-        }
-
-        # If payload exists, convert to query string and append to url.
-        if payload:
-            url = '%s?%s' % (url, urlencode(payload))
-
-        response = self._session.get(url, headers=request_headers, auth=self._http_auth)
         response.raise_for_status()
-
         self._rets_session_id = response.cookies.get('RETS-Session-ID', '')
-
-        return response
-
-    def _http_post(self, url: str, headers: dict = None, payload: dict = None) -> Response:
-        if not self._session:
-            raise RetsClientError('Session not instantiated. Call .login() first')
-
-        request_headers = {
-            **(headers or {}),
-            'User-Agent': self.user_agent,
-            'RETS-Version': self.rets_version,
-            'RETS-UA-Authorization': self._rets_ua_authorization()
-        }
-
-        response = self._session.post(url, auth=self._http_auth, headers=request_headers, data=payload)
-        response.raise_for_status()
-
-        self._rets_session_id = response.cookies.get('RETS-Session-ID', '')
-
         return response
 
     def _rets_ua_authorization(self) -> str:
