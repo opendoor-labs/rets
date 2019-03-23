@@ -308,7 +308,7 @@ class RetsHttpClient:
             response = self._session.post(url, auth=self._http_auth, headers=request_headers, data=payload)
 
         response.raise_for_status()
-        self._rets_session_id = response.cookies.get('RETS-Session-ID', '')
+        self._rets_session_id = self._session.cookies.get('RETS-Session-ID', '')
         return response
 
     def _rets_ua_authorization(self) -> str:
