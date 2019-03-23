@@ -139,8 +139,8 @@ class RetsHttpClient:
             Note: The metadata_id for METADATA-SYSTEM and METADATA-RESOURCE must be 0 or *.
         """
         payload = {
-            'type': 'METADATA-' + type_.upper(),
-            'id': metadata_id,
+            'Type': 'METADATA-' + type_.upper(),
+            'ID': metadata_id,
             'Format': 'COMPACT',
         }
         return self._http_request(self._url_for('GetMetadata'), payload=payload)
