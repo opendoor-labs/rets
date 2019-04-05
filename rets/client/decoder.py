@@ -32,11 +32,14 @@ class RecordDecoder:
             return decoders[field](value)
         ret = []
         for row in rows:
-            try:
-                ret.append(OrderedDict((field, decode_field(field, value)) for field, value in row.items()))
-            except (InvalidOperation, ValueError):
-                # Temporarily skip invalid rows in CARETS
-                continue
+            curr_dict = OrderedDict()
+            for field, value in row.items():
+                try:
+                    curr_dict[field] = decode_field(field, value)
+                except (InvalidOperation, ValueError):
+                    # Temporarily skip invalid rows in Metrolist
+                    continue
+            ret.append(curr_dict)
         return ret
 
     def _build_decoders(self, fields: Sequence[str]) -> dict:
