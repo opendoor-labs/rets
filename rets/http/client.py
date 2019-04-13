@@ -121,7 +121,7 @@ class RetsHttpClient:
         try:
             return parse_metadata(self._get_metadata(type_, id_))
         except RetsApiError as e:
-            if e.reply_code == 20503:  # No Metadata found
+            if e.reply_code in (20502, 20503):  # No metadata exists.
                 return ()
             raise
 
