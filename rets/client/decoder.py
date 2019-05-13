@@ -32,16 +32,8 @@ class RecordDecoder:
                 return None
             return decoders[field](value)
 
-        decoded_rows = []
-        for row in rows:
-            try:
-                for field, value in row.items():
-                    decoded_rows.append(OrderedDict((field, decode_field(field, value))))
-            except decimal.InvalidOperation as e:
-                logger.warning(f'EXTRA TAB ISSUE: A listing has encountered the extra tab issue. Skipping this listing')
-                continue
-
-        return tuple(decoded_rows)
+        return tuple(OrderedDict((field, decode_field(field, value)) for field, value in row.items())
+                     for row in rows)
 
     def _build_decoders(self, fields: Sequence[str]) -> dict:
         decoders = {}
