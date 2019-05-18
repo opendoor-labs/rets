@@ -33,16 +33,21 @@ class RecordDecoder:
         ret = []
         for row in rows:
             curr_dict = OrderedDict()
+            has_extra_column_issue = False
             for field, value in row.items():
                 try:
                     curr_dict[field] = decode_field(field, value)
-                except (InvalidOperation, ValueError):
+                except (InvalidOperation, ValueError, KeyError):
                     # Temporarily skip invalid rows in Metrolist / Carets
-                    logger.warning(
-                        f'EXTRA TAB ISSUE: A listing has encountered the extra tab issue. Skipping this listing')
+                    has_extra_column_issue = True
                     continue
+            if has_extra_column_issue:
+                logger.warning(
+                    f'EXTRA TAB ISSUE: A listing has encountered the extra tab issue. Skipping this listing')
+                logger.warning(f'Bad row: {row}')
+                continue
             ret.append(curr_dict)
-        return tuple(ret)
+        return ret
 
     def _build_decoders(self, fields: Sequence[str]) -> dict:
         decoders = {}
