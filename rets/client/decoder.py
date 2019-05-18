@@ -37,10 +37,12 @@ class RecordDecoder:
                 try:
                     curr_dict[field] = decode_field(field, value)
                 except (InvalidOperation, ValueError):
-                    # Temporarily skip invalid rows in Metrolist
+                    # Temporarily skip invalid rows in Metrolist / Carets
+                    logger.warning(
+                        f'EXTRA TAB ISSUE: A listing has encountered the extra tab issue. Skipping this listing')
                     continue
             ret.append(curr_dict)
-        return ret
+        return tuple(ret)
 
     def _build_decoders(self, fields: Sequence[str]) -> dict:
         decoders = {}
