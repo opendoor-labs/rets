@@ -30,11 +30,13 @@ class RetsHttpClient:
                  capability_urls: str = None,
                  cookie_dict: dict = None,
                  use_get_method: bool = False,
+                 strict_reply_code: bool = False,
                  ):
         self._user_agent = user_agent
         self._user_agent_password = user_agent_password
         self._rets_version = rets_version
         self._use_get_method = use_get_method
+        self._strict_reply_code = strict_reply_code
 
         splits = urlsplit(login_url)
         self._base_url = urlunsplit((splits.scheme, splits.netloc, '', '', ''))
@@ -97,7 +99,7 @@ class RetsHttpClient:
 
     def login(self) -> dict:
         response = self._http_request(self._url_for('Login'))
-        self._capabilities = parse_capability_urls(response)
+        self._capabilities = parse_capability_urls(response, self._strict_reply_code)
         return self._capabilities
 
     def logout(self) -> None:
@@ -105,7 +107,7 @@ class RetsHttpClient:
         self._session = None
 
     def get_system_metadata(self) -> SystemMetadata:
-        return parse_system(self._get_metadata('system'))
+        return parse_system(self._get_metadata('system'), self._strict_reply_code)
 
     def get_metadata(self,
                      type_: str,
@@ -119,7 +121,7 @@ class RetsHttpClient:
             id_ = metadata_id
 
         try:
-            return parse_metadata(self._get_metadata(type_, id_))
+            return parse_metadata(self._get_metadata(type_, id_), self._strict_reply_code)
         except RetsApiError as e:
             if e.reply_code in (20502, 20503):  # No metadata exists.
                 return ()
@@ -222,7 +224,7 @@ class RetsHttpClient:
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
         response = self._http_request(self._url_for('Search'), payload=payload)
-        return parse_search(response)
+        return parse_search(response, self._strict_reply_code)
 
     def get_object(self,
                    resource: str,
@@ -280,7 +282,7 @@ class RetsHttpClient:
             'Location': int(location),
         }
         response = self._http_request(self._url_for('GetObject'), headers=headers, payload=payload)
-        return parse_object(response)
+        return parse_object(response, self._strict_reply_code)
 
     def _url_for(self, transaction: str) -> str:
         try:

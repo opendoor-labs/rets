@@ -14,20 +14,20 @@ DEFAULT_ENCODING = 'utf-8'
 ResponseLike = Union[Response, BodyPart]
 
 
-def parse_xml(response: ResponseLike) -> etree.Element:
+def parse_xml(response: ResponseLike, strict: bool) -> etree.Element:
     root = etree.fromstring(response.content.decode(DEFAULT_ENCODING), parser=etree.XMLParser(recover=True))
 
     if root is None:
         raise RetsResponseError(response.content, response.headers)
 
     reply_code, reply_text = _parse_rets_status(root)
-    if reply_code and reply_text != "Operation Successful":
+    if reply_code and (strict or reply_text != "Operation Successful"):
         raise RetsApiError(reply_code, reply_text, response.content)
 
     return root
 
 
-def parse_capability_urls(response: Response) -> dict:
+def parse_capability_urls(response: Response, strict: bool) -> dict:
     """
     Parses the list of capability URLs from the response of a successful Login transaction.
 
@@ -53,7 +53,7 @@ def parse_capability_urls(response: Response) -> dict:
         </RETS-RESPONSE>
     </RETS>
     """
-    elem = parse_xml(response)
+    elem = parse_xml(response, strict)
     response_elem = elem.find('RETS-RESPONSE')
     if response_elem is None:
         return {}
@@ -61,7 +61,7 @@ def parse_capability_urls(response: Response) -> dict:
     return dict((s.strip() for s in arg.split('=', 1)) for arg in raw_arguments)
 
 
-def parse_metadata(response: Response) -> Sequence[Metadata]:
+def parse_metadata(response: Response, strict: bool) -> Sequence[Metadata]:
     """
     Parse the information from a GetMetadata transaction.
 
@@ -76,7 +76,7 @@ def parse_metadata(response: Response) -> Sequence[Metadata]:
         </METADATA-RESOURCE>
     </RETS>
     """
-    elem = parse_xml(response)
+    elem = parse_xml(response, strict)
     metadata_elems = [e for e in elem.findall('*') if e.tag.startswith('METADATA-')]
     if metadata_elems is None:
         return ()
@@ -93,7 +93,7 @@ def parse_metadata(response: Response) -> Sequence[Metadata]:
     return tuple(parse_metadata_elem(metadata_elem) for metadata_elem in metadata_elems)
 
 
-def parse_system(response: Response) -> SystemMetadata:
+def parse_system(response: Response, strict: bool) -> SystemMetadata:
     """
     Parse the server system information from a SYSTEM GetMetadata transaction.
 
@@ -104,7 +104,7 @@ def parse_system(response: Response) -> SystemMetadata:
         </METADATA-SYSTEM>
     </RETS>
     """
-    elem = parse_xml(response)
+    elem = parse_xml(response, strict)
     metadata_system_elem = _find_or_raise(elem, 'METADATA-SYSTEM')
     system_elem = _find_or_raise(metadata_system_elem, 'SYSTEM')
     comments_elem = metadata_system_elem.find('COMMENTS')
@@ -120,9 +120,9 @@ def parse_system(response: Response) -> SystemMetadata:
     )
 
 
-def parse_search(response: Response) -> SearchResult:
+def parse_search(response: Response, strict: bool) -> SearchResult:
     try:
-        elem = parse_xml(response)
+        elem = parse_xml(response, strict)
     except RetsApiError as e:
         if e.reply_code == 20201:  # No records found
             return SearchResult(0, False, ())
