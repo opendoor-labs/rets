@@ -27,7 +27,7 @@ class RecordDecoder:
         decoders = self._build_decoders(tuple(rows[0].keys()))
 
         def decode_field(field: str, value: str) -> Any:
-            if value == '':
+            if value == '' or value is None:
                 return None
             return decoders[field](value)
 
@@ -56,7 +56,7 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
     if interpretation == _LOOKUP_TYPE:
         return str
     elif interpretation in _LOOKUP_MULTI_TYPES:
-        return lambda value: value.split(',')
+        return lambda value: value.split(',') if hasattr(value, 'split') else None
 
     if data_type in _TIMEZONE_AWARE_DECODERS:
         return partial(_TIMEZONE_AWARE_DECODERS[data_type], include_tz=include_tz)
@@ -68,6 +68,9 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
 
 
 def _decode_datetime(value: str, include_tz: bool) -> datetime:
+    # What if the entry is messed up and there's no date?
+    if value is None:
+        return udatetime.from_string('1970-01-01T00:00:00')
     # Correct `0000-00-00 00:00:00` to `0000-00-00T00:00:00`
     if re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):
         value = '%sT%s' % (value[0:10], value[11:])

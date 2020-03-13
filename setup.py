@@ -19,11 +19,13 @@ install_requires = [
 
 setup_requires = [
     'pytest-runner',
+
 ]
 
 tests_requires = [
     'flake8',
     'pytest',
+    'mock'
 ]
 
 packages = [
