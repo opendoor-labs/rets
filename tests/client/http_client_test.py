@@ -1,13 +1,13 @@
 from http.cookiejar import Cookie
 
-from mock import mock
+from unittest.mock import MagicMock
 from requests.cookies import RequestsCookieJar
 from rets import RetsHttpClient
 
 
 def test_cookie_dict():
     c = RetsHttpClient('login_url', 'username', 'password')
-    c._session = mock.MagicMock()
+    c._session = MagicMock()
     jar = RequestsCookieJar()
     c1 = Cookie(1, 'name1', 'value1', 80, 80, 'domain', 'domain_specified', 'domain_initial_dot', 'path',
                 'path_specified', True, True, False, 'comment', 'comment_url', 'rest')
