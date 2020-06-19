@@ -1,6 +1,5 @@
 [![PyPI Version](https://badge.fury.io/py/rets-python.svg)](https://pypi.python.org/pypi/rets-python)
-[![Code Health](https://landscape.io/github/opendoor-labs/rets/master/landscape.svg?style=flat)](https://landscape.io/github/opendoor-labs/rets/master)
-[![Build Status](https://travis-ci.org/opendoor-labs/rets.svg?branch=master)](https://travis-ci.org/opendoor-labs/rets)
+[![Build Status](https://travis-ci.org/opendoor-labs/rets.svg?branch=master)](https://travis-ci.org/goproperly/rets)
 [![Python Version](https://img.shields.io/pypi/pyversions/rets-python.svg)](https://pypi.python.org/pypi/rets-python)
 [![License](https://img.shields.io/pypi/l/rets-python.svg)](https://pypi.python.org/pypi/rets-python)
 
