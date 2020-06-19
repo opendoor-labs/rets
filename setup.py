@@ -33,14 +33,24 @@ packages = [
     'rets.http.parsers',
 ]
 
+import os
+
+major = 0
+minor = 5
+build_num = os.environ.get('PROPERLY_BUILD_NUMBER', '0-dev')
+
+VERSION_TEMPLATE = "{}.{}.{}"
+version_val = VERSION_TEMPLATE.format(major, minor, build_num)
+
+
 setup(
-    name='rets-python',
-    version='0.4.4',
-    description='rets-python',
+    name='properly-rets',
+    version=version_val,
+    description='properly-rets',
     long_description=long_desc,
-    author='Martin Liu',
-    author_email='martin@opendoor.com',
-    url='https://github.com/opendoor-labs/rets',
+    author="GoProperly",
+    author_email="info@goproperly.com",
+    url='https://github.com/properly.ca/rets',
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Financial and Insurance Industry',
