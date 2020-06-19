@@ -55,5 +55,5 @@ target/
 
 .DS_Store
 
-# Virutal environment
+# Virtual environment
 venv/
