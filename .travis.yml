@@ -1,9 +1,22 @@
 language: python
-
 python:
-  - "3.5"
   - "3.6"
+# command to install dependencies
+cache:
+  directories:
+    - node_modules
 
-install: python setup.py -q install
+env:
+  global:
+    PROPERLY_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER
 
-script: python setup.py -q test
+install:
+  - ./setup.sh
+
+jobs:
+  include:
+    - stage: test
+      script: ./test.sh
+    - stage: deploy
+      if: branch == master
+      script: ./deploy_ci.sh
