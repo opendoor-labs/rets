@@ -16,7 +16,18 @@ ResponseLike = Union[Response, BodyPart]
 
 def parse_xml(response: ResponseLike) -> etree.Element:
     encoding = response.encoding or DEFAULT_ENCODING
-    root = etree.fromstring(response.content.decode(encoding), parser=etree.XMLParser(recover=True))
+    try:
+        root = etree.fromstring(
+            response.content.decode(encoding),
+            parser=etree.XMLParser(recover=True)
+        )
+    except ValueError:
+        # Unicode strings with encoding declaration are not supported.
+        # -> try without encoding declaration
+        root = etree.fromstring(
+            response.content,
+            parser=etree.XMLParser(recover=True)
+        )
 
     if root is None:
         raise RetsResponseError(response.content, response.headers)
