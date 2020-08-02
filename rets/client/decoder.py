@@ -113,4 +113,6 @@ _DECODERS = {
     'Long': int,
     'Decimal': Decimal,
     'Number': int,
+    # Point is new "Edm.GeographyPoint" from RESO, look online for spec. Can store as Postgres Point, see https://bit.ly/2BDPgUS
+    'Point': str,  
 }
