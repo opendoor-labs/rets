@@ -15,6 +15,7 @@ install_requires = [
     'udatetime==0.0.16',
     'docopts',
     'lxml>=4.3.0',
+    'python-dateutil==2.8.1'
 ]
 
 setup_requires = [

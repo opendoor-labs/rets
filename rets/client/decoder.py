@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, Sequence
 
 import udatetime
+from dateutil.parser import parse as parse_date
 
 from rets.errors import RetsParseError
 
@@ -79,7 +80,11 @@ def _decode_datetime(value: str, include_tz: bool) -> datetime:
     elif re.match(r'^\d{4}-\d{2}-\d{2}$', value):
         value = '%sT00:00:00' % value[0:10]
 
-    decoded = udatetime.from_string(value)
+    try:
+        decoded = udatetime.from_string(value)
+    except:
+        # dateutil.parse.parse, slow but best way to handle unexpected formats
+        decoded = parse_date(value)
     if not include_tz:
         return decoded.astimezone(timezone.utc).replace(tzinfo=None)
     return decoded
