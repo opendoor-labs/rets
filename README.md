@@ -67,9 +67,6 @@ The values returned by the search query will be automatically decoded into Pytho
 ```python
 >>> listing = search_result.data[0]
 
->>> listing.resource_key
-'20170104191513476022000000'
-
 >>> listing.data
 {
     'internal_listing_id': '20170104191513476022000000',
@@ -79,17 +76,16 @@ The values returned by the search query will be automatically decoded into Pytho
     'list_price': 250000,
     ...
 }
+
+>>> listing.data[listing.resource_class.resource.key_field]
+'20170104191513476022000000'
 ```
 
-Photos and other object types for a record can be retrieved directly from the record object. They
-can also be retrieved in bulk from the ObjectType object using the resource keys of the records.
+Photos can also be retrieved in bulk from the ObjectType object using the resource keys of the records.
 
 ```python
->>> listing.get_objects('HiRes', location=True)
-(Object(mime_type='image/jpeg', content_id='20170104191513476022000000', description='Front', object_id='1', url='...', preferred=True, data=None), ...)
-
 >>> all_photos = photo_object_type.get(
-    resource_keys=[listing.resource_key for listing in listings],
+    resource_keys=[listing.data[listing.resource_class.resource.key_field] for listing in listings],
     location=True,
 )
 
