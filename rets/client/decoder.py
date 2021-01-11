@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, Sequence
 
 import udatetime
+import dateutil
 
 from rets.errors import RetsParseError
 
@@ -68,14 +69,7 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
 
 
 def _decode_datetime(value: str, include_tz: bool) -> datetime:
-    # Correct `0000-00-00 00:00:00` to `0000-00-00T00:00:00`
-    if re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):
-        value = '%sT%s' % (value[0:10], value[11:])
-    # Correct `0000-00-00` to `0000-00-00T00:00:00`
-    elif re.match(r'^\d{4}-\d{2}-\d{2}$', value):
-        value = '%sT00:00:00' % value[0:10]
-
-    decoded = udatetime.from_string(value)
+    decoded = dateutil.parser.parse(value)
     if not include_tz:
         return decoded.astimezone(timezone.utc).replace(tzinfo=None)
     return decoded
