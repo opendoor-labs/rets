@@ -106,6 +106,8 @@ def test_decode_datetime():
     # digit, however udatetime only permits 3 or 6 digits.
     assert _decode_datetime('2017-01-02T03:04:05.600', True) == \
            datetime(2017, 1, 2, 3, 4, 5, 600000, tzinfo=timezone(timedelta(0)))
+    assert _decode_datetime('2020-10-12 10:46:54.146488', True) == \
+           datetime(2020, 10, 12, 10, 46, 54, 146488, tzinfo=timezone(timedelta(0)))
     assert _decode_datetime('2017-01-02T03:04:05Z', True) == \
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_datetime('2017-01-02T03:04:05+00:00', True) == \
