@@ -68,12 +68,12 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
 
 
 def _decode_datetime(value: str, include_tz: bool) -> datetime:
-    # Correct `0000-00-00 00:00:00` to `0000-00-00T00:00:00`
-    if value[10] == ' ':
-        value = '%sT%s' % (value[0:10], value[11:])
     # Correct `0000-00-00` to `0000-00-00T00:00:00`
-    elif re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+    if len(value) == 10:
         value = '%sT00:00:00' % value[0:10]
+    # Correct `0000-00-00 00:00:00` to `0000-00-00T00:00:00`
+    elif value[10] == ' ':
+        value = '%sT%s' % (value[0:10], value[11:])
 
     decoded = udatetime.from_string(value)
     if not include_tz:
@@ -114,5 +114,5 @@ _DECODERS = {
     'Decimal': Decimal,
     'Number': int,
     # Point is new "Edm.GeographyPoint" from RESO, look online for spec. Can store as Postgres Point, see https://bit.ly/2BDPgUS
-    'Point': str,  
+    'Point': str,
 }
