@@ -29,7 +29,10 @@ class RecordDecoder:
         def decode_field(field: str, value: str) -> Any:
             if value == '':
                 return None
-            return decoders[field](value)
+            try:
+                return decoders[field](value)
+            except Exception as e:
+                raise ValueError(f"Error decoding field {field} with value {value}. Error: {e}") from e
 
         return tuple(OrderedDict((field, decode_field(field, value)) for field, value in row.items())
                      for row in rows)
