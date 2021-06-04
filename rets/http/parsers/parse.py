@@ -16,7 +16,18 @@ ResponseLike = Union[Response, BodyPart]
 
 def parse_xml(response: ResponseLike) -> etree.Element:
     encoding = response.encoding or DEFAULT_ENCODING
-    root = etree.fromstring(response.content.decode(encoding), parser=etree.XMLParser(recover=True))
+    try:
+        root = etree.fromstring(response.content.decode(encoding), parser=etree.XMLParser(recover=True))
+    except ValueError as e:
+        if str(e) == "Unicode strings with encoding declaration are not supported. Please use bytes input or XML fragments without declaration.":
+            try:
+                # try to parse bytes directly, rather than from string
+                root = etree.XML(response.content)
+            except Exception:
+                # unable to parse bytes. abort, and re-raise original error
+                raise e
+        else:
+            raise e
 
     if root is None:
         raise RetsResponseError(response.content, response.headers)
