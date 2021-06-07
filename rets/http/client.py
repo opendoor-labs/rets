@@ -301,7 +301,7 @@ class RetsHttpClient:
             'RETS-Version': self.rets_version,
         }
         if self._send_rets_ua_authorization:
-            request_headers['RETS-UA-Authorization']: self._rets_ua_authorization()
+            request_headers['RETS-UA-Authorization'] = self._rets_ua_authorization()
 
         if self._use_get_method:
             if payload:
