@@ -6,8 +6,6 @@ from decimal import Decimal
 from functools import partial
 from typing import Any, Sequence
 
-import udatetime
-
 from rets.errors import RetsParseError
 
 logger = logging.getLogger('rets')
@@ -78,7 +76,7 @@ def _decode_datetime(value: str, include_tz: bool) -> datetime:
     elif value[10] == ' ':
         value = '%sT%s' % (value[0:10], value[11:])
 
-    decoded = udatetime.from_string(value)
+    datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
     if not include_tz:
         return decoded.astimezone(timezone.utc).replace(tzinfo=None)
     return decoded
