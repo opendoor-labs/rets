@@ -224,7 +224,7 @@ class RetsHttpClient:
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
         response = self._http_request(self._url_for('Search'), payload=payload)
-        return parse_search(response)
+        return parse_search(response, format_)
 
     def get_object(self,
                    resource: str,

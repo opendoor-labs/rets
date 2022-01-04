@@ -8,6 +8,7 @@ from requests_toolbelt.multipart.decoder import BodyPart
 
 from rets.errors import RetsParseError, RetsApiError, RetsResponseError
 from rets.http.data import Metadata, SearchResult, SystemMetadata
+import xmltodict
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -128,7 +129,7 @@ def parse_system(response: Response) -> SystemMetadata:
     )
 
 
-def parse_search(response: Response) -> SearchResult:
+def parse_search(response: Response, format_: str = 'COMPACT-DECODED') -> SearchResult:
     try:
         elem = parse_xml(response)
     except RetsApiError as e:
@@ -142,10 +143,13 @@ def parse_search(response: Response) -> SearchResult:
     else:
         count = None
 
-    try:
-        data = tuple(_parse_data(elem))
-    except RetsParseError:
-        data = None
+    if format_ == 'STANDARD-XML':
+        data = xmltodict.parse(response.content)
+    else:
+        try:
+            data = tuple(_parse_data(elem))
+        except RetsParseError:
+            data = None
 
     return SearchResult(
         count=count,
