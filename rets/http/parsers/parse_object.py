@@ -1,6 +1,7 @@
 import mimetypes
 from typing import Optional, Sequence
 import cgi
+from xmlrpc.client import boolean
 
 from requests import Response
 from requests.structures import CaseInsensitiveDict
@@ -11,7 +12,7 @@ from rets.http.data import Object
 from rets.http.parsers.parse import DEFAULT_ENCODING, ResponseLike, parse_xml
 
 
-def parse_object(response: Response) -> Sequence[Object]:
+def parse_object(response: Response, default_encoding: boolean = False) -> Sequence[Object]:
     """
     Parse the response from a GetObject transaction. If there are multiple
     objects to be returned then the response should be a multipart response.
@@ -23,13 +24,13 @@ def parse_object(response: Response) -> Sequence[Object]:
     content_type = response.headers.get('content-type')
 
     if content_type and 'multipart/parallel' in content_type:
-        return _parse_multipart(response)
+        return _parse_multipart(response, default_encoding)
 
     object_ = _parse_body_part(response)
     return (object_,) if object_ is not None else ()
 
 
-def _parse_multipart(response: ResponseLike) -> Sequence[Object]:
+def _parse_multipart(response: ResponseLike, default_encoding: boolean) -> Sequence[Object]:
     """
     RFC 2045 describes the format of an Internet message body containing a MIME message. The
     body contains one or more body parts, each preceded by a boundary delimiter line, and the
@@ -60,7 +61,9 @@ def _parse_multipart(response: ResponseLike) -> Sequence[Object]:
 
     --simple boundary--
     """
-    encoding = response.encoding or DEFAULT_ENCODING
+    encoding = DEFAULT_ENCODING
+    if not default_encoding:
+        encoding = response.encoding or DEFAULT_ENCODING
     multipart = MultipartDecoder.from_response(response, encoding)
     # We need to decode the headers because MultipartDecoder returns bytes keys and values,
     # while requests.Response.headers uses str keys and values.
