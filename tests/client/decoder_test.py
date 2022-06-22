@@ -102,12 +102,10 @@ def test_get_decoder():
 def test_decode_datetime():
     assert _decode_datetime('2017-01-02T03:04:05', True) == \
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(0)))
-    # TODO: The standard specifies that the second fraction is limited to one
-    # digit, however udatetime only permits 3 or 6 digits.
-    assert _decode_datetime('2017-01-02T03:04:05.600', True) == \
+    assert _decode_datetime('2017-01-02T03:04:05.6', True) == \
            datetime(2017, 1, 2, 3, 4, 5, 600000, tzinfo=timezone(timedelta(0)))
-    assert _decode_datetime('2020-10-12 10:46:54.146488', True) == \
-           datetime(2020, 10, 12, 10, 46, 54, 146488, tzinfo=timezone(timedelta(0)))
+    assert _decode_datetime('2020-10-12 10:46:54.1', True) == \
+           datetime(2020, 10, 12, 10, 46, 54, 100000, tzinfo=timezone(timedelta(0)))
     assert _decode_datetime('2017-01-02T03:04:05Z', True) == \
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_datetime('2017-01-02T03:04:05+00:00', True) == \
@@ -116,15 +114,15 @@ def test_decode_datetime():
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_datetime('2017-01-02T03:04:05+07:08', True) == \
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(hours=7, minutes=8)))
-    assert _decode_datetime('2017-01-02T03:04:05.600+07:08', True) == \
+    assert _decode_datetime('2017-01-02T03:04:05.6+07:08', True) == \
            datetime(2017, 1, 2, 3, 4, 5, 600000, tzinfo=timezone(timedelta(hours=7, minutes=8)))
     assert _decode_datetime('2017-01-02T03:04:05-07:08', True) == \
            datetime(2017, 1, 2, 3, 4, 5, tzinfo=timezone(timedelta(hours=-7, minutes=-8)))
     assert _decode_datetime('2017-01-02T03:04:05', False) == \
            datetime(2017, 1, 2, 3, 4, 5)
-    assert _decode_datetime('2017-01-02T03:04:05.600', False) == \
+    assert _decode_datetime('2017-01-02T03:04:05.6', False) == \
            datetime(2017, 1, 2, 3, 4, 5, 600000)
-    assert _decode_datetime('2017-01-02 03:04:05.600', False) == \
+    assert _decode_datetime('2017-01-02 03:04:05.6', False) == \
            datetime(2017, 1, 2, 3, 4, 5, 600000)
     assert _decode_datetime('2017-01-02T03:04:05Z', False) == datetime(2017, 1, 2, 3, 4, 5)
     assert _decode_datetime('2017-01-02T03:04:05+00:00', False) == datetime(2017, 1, 2, 3, 4, 5)
@@ -137,15 +135,13 @@ def test_decode_datetime():
 
 def test_decode_time():
     assert _decode_time('03:04:05', True) == time(3, 4, 5, tzinfo=timezone(timedelta(0)))
-    # TODO: The standard specifies that the second fraction is limited to one
-    # digit, however udatetime only permits 3 or 6 digits.
-    assert _decode_time('03:04:05.600', True) == time(3, 4, 5, 600000, tzinfo=timezone(timedelta(0)))
+    assert _decode_time('03:04:05.6', True) == time(3, 4, 5, 600000, tzinfo=timezone(timedelta(0)))
     assert _decode_time('03:04:05Z', True) == time(3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_time('03:04:05+00:00', True) == time(3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_time('03:04:05-00:00', True) == time(3, 4, 5, tzinfo=timezone(timedelta(0)))
     assert _decode_time('03:04:05+07:08', True) == time(3, 4, 5, tzinfo=timezone(timedelta(hours=7, minutes=8)))
     assert _decode_time('03:04:05-07:08', True) == time(3, 4, 5, tzinfo=timezone(timedelta(hours=-7, minutes=-8)))
-    assert _decode_time('03:04:05.600+07:08', True) == \
+    assert _decode_time('03:04:05.6+07:08', True) == \
            time(3, 4, 5, 600000, tzinfo=timezone(timedelta(hours=7, minutes=8)))
     assert _decode_time('03:04:05', False) == time(3, 4, 5)
     assert _decode_time('03:04:05.600', False) == time(3, 4, 5, 600000)

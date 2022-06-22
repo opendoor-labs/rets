@@ -1,12 +1,10 @@
 import logging
 import re
 from collections import OrderedDict
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from functools import partial
 from typing import Any, Sequence
-
-import udatetime
 
 from rets.errors import RetsParseError
 
@@ -70,18 +68,30 @@ def _get_decoder(data_type: str, interpretation: str, include_tz: bool = False):
         raise RetsParseError('unknown data type %s' % data_type) from None
 
 
-def _decode_datetime(value: str, include_tz: bool) -> datetime:
-    # Correct `0000-00-00` to `0000-00-00T00:00:00`
-    if len(value) == 10:
-        value = '%sT00:00:00' % value[0:10]
-    # Correct `0000-00-00 00:00:00` to `0000-00-00T00:00:00`
-    elif value[10] == ' ':
-        value = '%sT%s' % (value[0:10], value[11:])
+_datetime_regex = \
+    re.compile(r'(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d))?)?(?:(Z)|([+-])(\d{2}):(\d{2}))?')
 
-    decoded = udatetime.from_string(value)
-    if not include_tz:
-        return decoded.astimezone(timezone.utc).replace(tzinfo=None)
-    return decoded
+
+def _decode_datetime(value: str, include_tz: bool) -> datetime:
+    m = _datetime_regex.match(value)
+    year, month, day, hours, minutes, seconds, microseconds, z, sign, offhours, offminutes = m.groups()
+    decoded = datetime(
+        int(year),
+        int(month),
+        int(day),
+        int(hours) if hours else 0,
+        int(minutes) if minutes else 0,
+        int(seconds) if seconds else 0,
+        int(microseconds) * 100000 if microseconds else 0,
+    )
+    offset = timedelta(hours=int(offhours) if offhours else 0, minutes=int(offminutes) if offminutes else 0)
+    if sign == '-':
+        offset = -offset
+
+    if include_tz:
+        return decoded.astimezone().replace(tzinfo=timezone.utc if z else timezone(offset))
+
+    return decoded - offset
 
 
 def _decode_time(value: str, include_tz: bool) -> time:
