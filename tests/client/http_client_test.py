@@ -1,6 +1,6 @@
 from http.cookiejar import Cookie
+from unittest import mock
 
-from mock import mock
 from requests.cookies import RequestsCookieJar
 from rets import RetsHttpClient
 
