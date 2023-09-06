@@ -149,6 +149,14 @@ To release a new version, use `bin/release <major|minor|patch>`
 This package is deployed to: https://pypi.org/manage/project/rets-python/releases/
 
 To deploy, you can try `bin/deploy`, but it may give you a SSL error. Alternatively, to deploy, see: https://packaging.python.org/tutorials/packaging-projects/ or in summary:
+
+
+Update version number in the following files (0.4.10 -> 0.4.11)
+* setup.py
+* build/lib/rets/__init__.py
+* rets/__init__.py
+
+
 ```
 python3 -m pip install --user --upgrade setuptools wheel
 python3 setup.py sdist bdist_wheel
