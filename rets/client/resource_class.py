@@ -70,7 +70,7 @@ class ResourceClass:
         return SearchResult(
             count=result.count,
             max_rows=result.max_rows,
-            data=tuple(Record(self, row) for row in rows),
+            data=tuple(Record(self, row) for row in rows) if rows else tuple(),
         )
 
     def _validate_query(self, query: Union[str, Mapping[str, str]]) -> str:
