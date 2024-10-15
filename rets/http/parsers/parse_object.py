@@ -89,6 +89,8 @@ def _parse_body_part(part: ResponseLike) -> Optional[Object]:
         except RetsApiError as e:
             if e.reply_code == 20403:  # No object found
                 return None
+            elif e.reply_code == 20407:  # Access to object not allowed
+                return None
             raise
 
     # All RETS responses _must_ have `Content-ID` and `Object-ID` headers.
